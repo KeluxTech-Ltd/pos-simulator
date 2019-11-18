@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE j8583-config PUBLIC "-//J8583//DTD CONFIG 1.0//EN"
+        "http://j8583.sourceforge.net/j8583.dtd" >
+
+<j8583-config>
+
+    <template type="0600">
+        <field num="4" type="AMOUNT">1234</field>
+        <field num="11" type="NUMERIC" length="6">123</field>
+        <field num="41" type="BINARY" length="8">abcdef</field>
+        <field num="42" type="BINARY" length="4">abcde</field>
+        <field num="43" type="ALPHA" length="40">Field of length 40</field>
+        <field num="62" type="LLBIN">0123456789abcdef620123456789abcd</field>
+        <field num="63" type="LLBIN">01234567863</field>
+        <field num="64" type="LLLBIN">0123456789abcdef640123456789abcd</field>
+        <field num="65" type="LLLBIN">01234567865</field>
+        <field num="102" type="LLLVAR">Field of type LLLVAR</field>
+    </template>
+
+    <!-- The server example uses this to read the requests -->
+
+    <parse type="0110">
+        <field num="2" type="LLVAR"/>
+        <field num="3" type="NUMERIC" length="6"/>
+        <field num="4" type="AMOUNT"/>
+        <field num="7" type="DATE10"/>
+        <field num="11" type="NUMERIC" length="6"/>
+        <field num="12" type="TIME"/>
+        <field num="13" type="DATE4"/>
+        <field num="14" type="NUMERIC" length="4"/>
+        <field num="15" type="DATE4"/>
+        <field num="18" type="ALPHA" length="4"/>
+        <field num="22" type="ALPHA" length="3"/>
+        <field num="23" type="ALPHA" length="3"/>
+        <field num="25" type="ALPHA" length="2"/>
+        <field num="26" type="NUMERIC" length="2"/>
+        <field num="28" type="ALPHA" length="9"/>
+        <field num="30" type="ALPHA" length="9"/>
+        <field num="32" type="LLVAR"/>
+        <field num="33" type="LLVAR"/>
+        <field num="35" type="LLVAR"/>
+        <field num="37" type="ALPHA" length="12"/>
+        <field num="38" type="NUMERIC" length="6"/>
+        <field num="39" type="NUMERIC" length="2"/>
+        <field num="40" type="NUMERIC" length="3"/>
+        <field num="41" type="ALPHA" length="8"/>
+        <field num="42" type="ALPHA" length="15"/>
+        <field num="43" type="ALPHA" length="40"/>
+        <field num="48" type="LLLVAR"/>
+        <field num="49" type="ALPHA" length="3"/>
+        <field num="52" type="ALPHA" length="16"/>
+        <field num="54" type="LLLVAR"/>
+        <field num="55" type="LLLVAR"/>
+        <field num="59" type="LLLVAR"/>
+        <field num="102" type="LLVAR"/>
+        <field num="123" type="LLLVAR"/>
+        <field num="128" type="ALPHA" length="64"/>
+    </parse>
+
+    <parse type="0210">
+        <field num="2" type="LLVAR"/>
+        <field num="3" type="NUMERIC" length="6"/>
+        <field num="4" type="AMOUNT"/>
+        <field num="7" type="DATE10"/>
+        <field num="11" type="NUMERIC" length="6"/>
+        <field num="12" type="TIME"/>
+        <field num="13" type="DATE4"/>
+        <field num="14" type="NUMERIC" length="4"/>
+        <field num="15" type="DATE4"/>
+        <field num="17" type="DATE_EXP"/>
+        <field num="18" type="ALPHA" length="4"/>
+        <field num="22" type="ALPHA" length="3"/>
+        <field num="23" type="ALPHA" length="3"/>
+        <field num="25" type="ALPHA" length="2"/>
+        <field num="26" type="NUMERIC" length="2"/>
+        <field num="28" type="ALPHA" length="9"/>
+        <field num="30" type="ALPHA" length="9"/>
+        <field num="32" type="LLVAR"/>
+        <field num="33" type="LLVAR"/>
+        <field num="35" type="LLVAR"/>
+        <field num="37" type="ALPHA" length="12"/>
+        <field num="38" type="NUMERIC" length="6"/>
+        <field num="39" type="NUMERIC" length="2"/>
+        <field num="40" type="NUMERIC" length="3"/>
+        <field num="41" type="ALPHA" length="8"/>
+        <field num="42" type="ALPHA" length="15"/>
+        <field num="43" type="ALPHA" length="40"/>
+        <field num="48" type="LLLVAR"/>
+        <field num="49" type="ALPHA" length="3"/>
+        <field num="52" type="ALPHA" length="16"/>
+        <field num="54" type="LLLVAR"/>
+        <field num="55" type="LLLVAR"/>
+        <field num="59" type="LLLVAR"/>
+        <field num="60" type="LLLVAR"/>
+        <field num="61" type="LLLVAR"/>
+        <field num="100" type="LLVAR"/>
+        <field num="102" type="LLVAR"/>
+        <field num="123" type="LLLVAR"/>
+        <field num="124" type="LLLLVAR"/>
+        <field num="128" type="ALPHA" length="64"/>
+    </parse>
+
+    <!-- this is for binary tests (message encoding AND fields) -->
+    <parse type="0600">
+        <field num="4" type="AMOUNT"/>
+        <field num="7" type="DATE10"/>
+        <field num="11" type="NUMERIC" length="6"/>
+        <field num="41" type="BINARY" length="8"/>
+        <field num="42" type="BINARY" length="4"/>
+        <field num="43" type="ALPHA" length="40"/>
+        <field num="62" type="LLBIN"/>
+        <field num="63" type="LLBIN"/>
+        <field num="64" type="LLLBIN"/>
+        <field num="65" type="LLLBIN"/>
+        <field num="102" type="LLLVAR"/>
+    </parse>
+
+    <parse type="0800">
+        <field num="3" type="ALPHA" length="6">123456</field>
+        <field num="12" type="DATE4">1231</field>
+        <field num="17" type="DATE4">1231</field>
+    </parse>
+
+    <parse type="0810">
+        <field num="7" type="DATE10" length="10"/>
+        <field num="11" type="NUMERIC" length="6"/>
+        <field num="12" type="TIME" length="6"/>
+        <field num="13" type="DATE4" length="4"/>
+        <field num="39" type="NUMERIC" length="2"/>
+        <field num="41" type="ALPHA" length="8"/>
+        <field num="53" type="ALPHA" length="32"/>
+        <field num="62" type="LLLVAR"/>
+        <field num="64" type="ALPHA" length="64"/>
+    </parse>
+
+    <parse type="1200">
+        <field num="10" type="LLLVAR">
+            <field num="1" type="ALPHA" length="5"/>
+            <field num="2" type="LLVAR"/>
+            <field num="3" type="NUMERIC" length="5"/>
+            <field num="4" type="ALPHA" length="1"/>
+        </field>
+    </parse>
+
+    <parse type="0430">
+        <field num="2" type="LLVAR"/>
+        <field num="3" type="NUMERIC" length="6"/>
+        <field num="4" type="AMOUNT"/>
+        <field num="7" type="DATE10"/>
+        <field num="11" type="NUMERIC" length="6"/>
+        <field num="12" type="TIME"/>
+        <field num="13" type="DATE4"/>
+        <field num="14" type="NUMERIC" length="4"/>
+        <field num="15" type="DATE4"/>
+        <field num="17" type="DATE_EXP"/>
+        <field num="18" type="ALPHA" length="4"/>
+        <field num="22" type="ALPHA" length="3"/>
+        <field num="23" type="ALPHA" length="3"/>
+        <field num="25" type="ALPHA" length="2"/>
+        <field num="26" type="NUMERIC" length="2"/>
+        <field num="28" type="ALPHA" length="9"/>
+        <field num="30" type="ALPHA" length="9"/>
+        <field num="32" type="LLVAR"/>
+        <field num="33" type="LLVAR"/>
+        <field num="35" type="LLVAR"/>
+        <field num="37" type="ALPHA" length="12"/>
+        <field num="38" type="NUMERIC" length="6"/>
+        <field num="39" type="NUMERIC" length="2"/>
+        <field num="40" type="NUMERIC" length="3"/>
+        <field num="41" type="ALPHA" length="8"/>
+        <field num="42" type="ALPHA" length="15"/>
+        <field num="43" type="ALPHA" length="40"/>
+        <field num="48" type="LLLVAR"/>
+        <field num="49" type="ALPHA" length="3"/>
+        <field num="52" type="ALPHA" length="16"/>
+        <field num="54" type="LLLVAR"/>
+        <field num="55" type="LLLVAR"/>
+        <field num="56" type="LLLVAR"/>
+        <field num="59" type="LLLVAR"/>
+        <field num="60" type="LLLVAR"/>
+        <field num="61" type="LLLVAR"/>
+        <field num="90" type="NUMERIC" length="42"/>
+        <field num="95" type="NUMERIC" length="42"/>
+        <field num="100" type="LLVAR"/>
+        <field num="102" type="LLVAR"/>
+        <field num="123" type="LLLVAR"/>
+        <field num="128" type="ALPHA" length="64"/>
+
+    </parse>
+
+</j8583-config>
