@@ -1,5 +1,6 @@
 package com.jayrush.springmvcrest.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -20,11 +21,12 @@ public class tmsUser {
 
     private String datecreated;
 
+    @JsonIgnore
     private String username;
 
     private String password;
 
-    @OneToOne
+    @ManyToOne
     private Institution institution;
 
     private roleType role;

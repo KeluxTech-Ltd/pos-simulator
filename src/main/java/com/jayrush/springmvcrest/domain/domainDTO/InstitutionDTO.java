@@ -2,8 +2,6 @@ package com.jayrush.springmvcrest.domain.domainDTO;
 
 import lombok.Data;
 
-import javax.persistence.*;
-
 @Data
 public class InstitutionDTO {
     private long id;
@@ -18,7 +16,7 @@ public class InstitutionDTO {
     private String merchantAccount;
     private String createdBy;
     private String dateCreated;
-    private String auth_token;
+    private String authToken;
     private String processorIP;
     private String processorPort;
     private String processorName;

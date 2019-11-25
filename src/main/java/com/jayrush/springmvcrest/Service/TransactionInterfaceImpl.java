@@ -14,7 +14,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import javax.xml.crypto.Data;
 import java.util.Date;
 import java.util.List;
 
@@ -46,8 +45,8 @@ public class TransactionInterfaceImpl implements TransactionInterface {
     }
 
     @Override
-    public List<TerminalTransactions>getTransactionsByTID(String terminalID) {
-        return transactionRepository.findByterminalID(terminalID);
+    public List<TerminalTransactions>getTransactionsByinstitutionID(String institutionID) {
+        return transactionRepository.findByinstitutionIDIgnoreCaseOrderByDate(institutionID);
     }
 
     @Override
@@ -59,6 +58,7 @@ public class TransactionInterfaceImpl implements TransactionInterface {
     @Override
     public TransactionListDTO getTransactionHistory(TransactionHistoryDTO transactionHistoryReq) {
         TransactionListDTO transactionListDTO = new TransactionListDTO();
+//        transactionHistoryReq.setInstitutionID("FREEDOM");
         List<TerminalTransactions> historyRespDTOS;
         Page<TerminalTransactions> pagedTransactions;
         Pageable paged;
@@ -69,9 +69,12 @@ public class TransactionInterfaceImpl implements TransactionInterface {
         else {
             paged = PageRequest.of(0,1000000);
         }
+        if (transactionHistoryReq.getInstitutionID()==null || transactionHistoryReq.getInstitutionID().equals("")){
+            pagedTransactions = transactionRepository.SelectAll(paged);
+        }
 
 
-        if(transactionHistoryReq.getFromDate()!=null && !transactionHistoryReq.getFromDate().equals("")
+        else if(transactionHistoryReq.getFromDate()!=null && !transactionHistoryReq.getFromDate().equals("")
                 && transactionHistoryReq.getToDate()!=null && !transactionHistoryReq.getToDate().equals("")
                 && transactionHistoryReq.getInstitutionID()!=null && !transactionHistoryReq.getInstitutionID().equals("")){
 
@@ -81,7 +84,7 @@ public class TransactionInterfaceImpl implements TransactionInterface {
             pagedTransactions = transactionRepository.findByinstitutionIDAndDateCreatedBetween(transactionHistoryReq.getInstitutionID(),fromDate,toDate,paged);
         }
         else {
-            pagedTransactions = transactionRepository.findByinstitutionIDIgnoreCaseOrderByTime(transactionHistoryReq.getInstitutionID(),paged);
+            pagedTransactions = transactionRepository.findByinstitutionID(transactionHistoryReq.getInstitutionID(),paged);
         }
         historyRespDTOS = pagedTransactions.getContent();
         if (pagedTransactions!=null && pagedTransactions.getContent().size()>0){
@@ -91,4 +94,6 @@ public class TransactionInterfaceImpl implements TransactionInterface {
         transactionListDTO.setTransactions(historyRespDTOS);
         return transactionListDTO;
     }
+
+
 }

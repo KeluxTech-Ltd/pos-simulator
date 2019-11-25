@@ -56,6 +56,7 @@ public class CreateSocketServer {
                 applicationContext.getAutowireCapableBeanFactory().autowireBean(socketRequestManager);
 
                 Thread clientHandler=new ClientHandler(socketInstance,inputStream,outputStream);
+
                 applicationContext.getAutowireCapableBeanFactory().autowireBean(clientHandler);
                 clientHandler.start();
 //                clientHandler.stop();

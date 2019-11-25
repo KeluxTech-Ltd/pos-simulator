@@ -12,7 +12,7 @@ import java.util.List;
 public interface TransactionInterface {
     TerminalTransactions saveTransactions(TerminalTransactions terminalTransactions);
     List<TerminalTransactions> fetchTransactions();
-    List<TerminalTransactions> getTransactionsByTID(String terminalID);
+    List<TerminalTransactions> getTransactionsByinstitutionID(String terminalID);
     Page<TerminalTransactions> fetchPaginatedTransactions(TerminalTransactions terminalTransactions, Pageable pageable);
 
     TransactionListDTO getTransactionHistory(TransactionHistoryDTO transactionHistory);

@@ -9,12 +9,14 @@ import com.jayrush.springmvcrest.Nibss.constants.TransactionErrorCode;
 import com.jayrush.springmvcrest.Nibss.models.transaction.*;
 import com.jayrush.springmvcrest.Nibss.network.ChannelSocketRequestManager;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
+import com.jayrush.springmvcrest.Service.TerminalInterfaceImpl;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.IsoType;
 import com.jayrush.springmvcrest.iso8583.IsoValue;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
 import com.jayrush.springmvcrest.slf4j.*;
 import org.apache.commons.codec.binary.Hex;
+import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import static com.jayrush.springmvcrest.Nibss.utils.DataUtil.bytesToHex;
 public class IsoProcessor
 {
    // static Logger logger;
+    private static org.slf4j.Logger logger = LoggerFactory.getLogger(IsoProcessor.class);
     private static String NIBSS_IP;
     private static int NIBSS_PORT;
     public static String CONFIG_FILE;
@@ -85,16 +88,19 @@ public class IsoProcessor
                 }
             }
             System.out.println("Get masterkey response: {}"+ (Object)response);
+            logger.info("Get masterkey response: {}"+ (Object)response);
         }
         catch (IOException e) {
             response = new GetMasterKeyResponse();
             response.setField39("-1");
             System.out.println("Failed to get master key due to IO exception"+ (Throwable)e);
+            logger.info("Failed to get master key due to IO exception"+ (Throwable)e);
         }
         catch (Exception e2) {
             response = new GetMasterKeyResponse();
             response.setField39("-1");
             System.out.println("Failed to get pin key"+ (Throwable)e2);
+            logger.info("Failed to get pin key"+ (Throwable)e2);
         }
         finally {
             if (socketRequester != null) {
@@ -103,6 +109,7 @@ public class IsoProcessor
                 }
                 catch (IOException ex) {
                     System.out.println("Failed to disconnect socket ");
+                    logger.info("Failed to disconnect socket ");
                 }
             }
         }
@@ -435,7 +442,7 @@ public class IsoProcessor
             IsoMessage responseMessage = null;
             try {
                 responseMessage = responseMessageFactory.parseMessage(responseBytes, 0);
-                printIsoFields(responseMessage, "Response ====> ");
+                printIsoFields(responseMessage, "ISO MESSAGE ====> ");
             }
             catch (Exception e2) {
                 response.setResponseCodeField39(TransactionErrorCode.FAILED_TO_READ_RESPONSE);
@@ -864,11 +871,14 @@ public class IsoProcessor
         if (isoMessage == null) {
             return;
         }
-        System.out.println("==================================================");
-        System.out.println(type);
+//        System.out.println("==================================================");
+        logger.info("==================================================");
+//        System.out.println(type);
+        logger.info(type);
         for (int index = 1; index <= 128; ++index) {
             if (isoMessage.hasField(index)) {
-                System.out.println("field " + index + ": " + isoMessage.getAt(index).getValue());
+//                System.out.println("field " + index + ": " + isoMessage.getAt(index).getValue());
+                logger.info("field " + index + ": " + isoMessage.getAt(index).getValue());
             }
         }
        // System.out.println("==================================================");

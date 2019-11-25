@@ -103,7 +103,7 @@ public class SwaggerConfig {
             "3Line Software Dev", "http://www.3lineng.com", "softwaredev@3lineng.com");
 
     public static final ApiInfo DEFAULT_API_INFO = new ApiInfo(
-            "TMS Terminal and Institution APIs", "This APIs are for the consumption by mobile devices", "1.0",
+            "TMS Terminal and Institution APIs", "This APIs are for the consumption by mobile/web devices", "1.0",
             "urn:tos", DEFAULT_CONTACT,
             "3Line", "http://www.3lineng.com", Collections.EMPTY_LIST);
 

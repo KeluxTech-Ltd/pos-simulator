@@ -6,6 +6,7 @@ import com.jayrush.springmvcrest.domain.*;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.tmsUserDTO;
+import com.jayrush.springmvcrest.email.MailService;
 import com.jayrush.springmvcrest.exceptions.tmsExceptions;
 import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
 import org.modelmapper.ModelMapper;
@@ -16,12 +17,16 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+
 @Service
 public class tmsLoginServicesImpl implements tmsLoginServices {
     private Logger logger = LoggerFactory.getLogger(this.getClass()) ;
 
     @Autowired
     PasswordEncoder passwordEncoder;
+    @Autowired
+    MailService mailService;
 
     @Autowired
     InstitutionRepository institutionRepository;
@@ -66,7 +71,13 @@ public class tmsLoginServicesImpl implements tmsLoginServices {
 
     @Override
     public Response CreateInstitutionUser(tmsUser User) {
+        Date date = new Date();
+        String body = "TMS User Details"+"\n\n\n\n" +
+                "username: "+User.getUsername()+"\n\n\n"
+                +"Password: "+User.getPassword();
         User.setPassword(passwordEncoder.encode(User.getPassword()));
+        mailService.SendMail(User.getEmail(),body);
+        User.setDatecreated(date.toString());
         tmsUser user = userRepository.save(User);
         Response response = new Response();
         response.setRespCode("00");

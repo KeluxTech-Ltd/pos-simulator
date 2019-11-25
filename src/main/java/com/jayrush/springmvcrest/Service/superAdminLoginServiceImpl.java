@@ -4,17 +4,20 @@ import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
 import com.jayrush.springmvcrest.Repositories.UserRepository;
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
+import com.jayrush.springmvcrest.domain.domainDTO.DeleteUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
-import com.jayrush.springmvcrest.domain.domainDTO.LoginDTOresponse;
 import com.jayrush.springmvcrest.domain.domainDTO.tmsUserDTO;
 import com.jayrush.springmvcrest.domain.tmsUser;
+import com.jayrush.springmvcrest.email.MailService;
 import com.jayrush.springmvcrest.exceptions.tmsExceptions;
 import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
-import net.bytebuddy.asm.Advice;
+import com.jayrush.springmvcrest.utility.AppUtility;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 @Service
 public class superAdminLoginServiceImpl implements superAdminLoginService {
@@ -26,6 +29,8 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
     private PasswordEncoder passwordEncoder;
     @Autowired
     JwtTokenUtil jwtTokenUtil;
+    @Autowired
+    MailService mailService;
 
     @Override
     public Response superAdminLogin(LoginDTO loginDTO) {
@@ -68,8 +73,14 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
 
     @Override
     public tmsUser superAdminCreateUsers(tmsUser tmsUser) {
+        Date date = new Date();
+        tmsUser.setUsername(tmsUser.getEmail());
+        String body = "TMS User Details"+"\n" +
+                "username: "+tmsUser.getUsername()+"\n"
+                +"Password: "+tmsUser.getPassword();
         tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
-
+        mailService.SendMail(tmsUser.getEmail(),body);
+        tmsUser.setDatecreated(date.toString());
         return userRepository.save(tmsUser);
     }
 
@@ -84,7 +95,19 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
     }
 
     @Override
-    public void superAdminDeleteUsers(tmsUser tmsUser) {
-        userRepository.delete(tmsUser);
+    public void superAdminDeleteUsers(DeleteUser deleteUser) {
+        tmsUser tmsUser = userRepository.findByusername(deleteUser.getUsername());
+        if (!tmsUser.equals(null)){
+            if (passwordEncoder.matches(deleteUser.getPassword(),tmsUser.getPassword())){
+                tmsUser tmsUser1 = userRepository.findById(deleteUser.getUserToDeleteid()).get();
+                userRepository.delete(tmsUser1);
+            }
+            else {
+                System.out.println("Incorrect Password");
+            }
+        }
+        else {
+            System.out.println("Invalid User");
+        }
     }
 }

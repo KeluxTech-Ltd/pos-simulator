@@ -4,6 +4,7 @@
 
 package com.jayrush.springmvcrest.Nibss.network;
 
+import com.jayrush.springmvcrest.ClientHandler;
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
 
@@ -12,6 +13,8 @@ import com.jayrush.springmvcrest.domain.domainDTO.Response;
 import com.jayrush.springmvcrest.domain.nibssresponse;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.net.ssl.SSLContext;
@@ -31,6 +34,8 @@ import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFie
 @Component
 public class ChannelSocketRequestManager
 {
+    private static Logger logger = LoggerFactory.getLogger(ChannelSocketRequestManager.class);
+
     private SSLSocket socket;
 
     public ChannelSocketRequestManager() {
@@ -99,7 +104,16 @@ public class ChannelSocketRequestManager
             final byte[] resp = new byte[contentLength];
             In.readFully(resp);
             final String s = new String(resp);
-            System.out.println("To POS---> "+s);
+//            System.out.println("To POS---> "+s);
+            if (s.startsWith("0810")){
+                logger.info("ISO Network Management ( 0810 )--->"+s);
+            }
+            else if (s.startsWith("0210")){
+                logger.info("Transaction Message ( 0210 )--->"+s);
+            }
+            else if (s.startsWith("0110")){
+                logger.info("Authorization Message ( 0110 )--->"+s);
+            }
             final short len = (short)resp.length;
             final byte[] headBytes = DataUtil.shortToBytes(len);
             final byte[] response = concat(headBytes, resp);
@@ -257,12 +271,13 @@ public class ChannelSocketRequestManager
         IsoMessage responseMessage = null;
         try {
             responseMessage = responseMessageFactory.parseMessage(message, 0);
-            printIsoFields(responseMessage, "Response ====> ");
+            printIsoFields(responseMessage, "ISO MESSAGE ====> ");
         }
         catch (Exception e2) {
             return response;
         }
         response.setResponseCode(responseMessage.getObjectValue(39).toString());
+
         if (responseMessage != null && responseMessage.hasField(4)) {
             response.setMti("0210");
             if (responseMessage.hasField(2)) {
@@ -288,7 +303,7 @@ public class ChannelSocketRequestManager
             }
             if (responseMessage.hasField(39)) {
                 response.setResponseCode(responseMessage.getObjectValue(39).toString());
-                response.setResponseDesc(nibssresponse.ResponseCodeMap(response.getResponseCode()));
+
             }
             if (responseMessage.hasField(41)) {
                 response.setTerminalID(responseMessage.getObjectValue(41).toString());
@@ -297,8 +312,11 @@ public class ChannelSocketRequestManager
                 response.setAgentLocation(responseMessage.getObjectValue(42).toString());
             }
         }
-        System.out.println("Response Code: {}"+ (Object)response.getResponseCode());
-        System.out.println("Response Description: {}"+ (Object)response.getResponseDesc());
+        response.setResponseDesc(nibssresponse.ResponseCodeMap(response.getResponseCode()));
+//        System.out.println("Response Code: {}"+ response.getResponseCode());
+        logger.info("Response Code: {}", response.getResponseCode());
+//        System.out.println("Response Description: {}"+ response.getResponseDesc());
+        logger.info("Response Description: {}", response.getResponseDesc());
         return response;
 
     }

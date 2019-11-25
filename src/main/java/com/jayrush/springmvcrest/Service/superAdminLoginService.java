@@ -2,6 +2,7 @@ package com.jayrush.springmvcrest.Service;
 
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
+import com.jayrush.springmvcrest.domain.domainDTO.DeleteUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTOresponse;
 import com.jayrush.springmvcrest.domain.tmsUser;
@@ -16,5 +17,5 @@ public interface superAdminLoginService {
     tmsUser superAdminCreateUsers(tmsUser tmsUser);
     tmsUser superAdminGetUser(Long id);
     Institution superAdminGetInstitution(Long id);
-    void superAdminDeleteUsers(tmsUser tmsUser);
+    void superAdminDeleteUsers(DeleteUser deleteUser);
 }

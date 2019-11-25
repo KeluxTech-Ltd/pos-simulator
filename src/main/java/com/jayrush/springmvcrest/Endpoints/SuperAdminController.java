@@ -3,6 +3,7 @@ package com.jayrush.springmvcrest.Endpoints;
 import com.jayrush.springmvcrest.Service.superAdminLoginService;
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
+import com.jayrush.springmvcrest.domain.domainDTO.DeleteUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -156,7 +157,7 @@ public class SuperAdminController {
     }
 
     @DeleteMapping("/user/{id}")
-    public ResponseEntity<?> superdeleteUser(@RequestBody tmsUser request){
+    public ResponseEntity<?> superdeleteUser(@RequestBody DeleteUser request){
         try {
             Response response = new Response();
             superAdminLoginService.superAdminDeleteUsers(request);
