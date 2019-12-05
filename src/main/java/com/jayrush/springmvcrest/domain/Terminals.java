@@ -1,5 +1,7 @@
 package com.jayrush.springmvcrest.domain;
 
+import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
+import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -15,8 +17,10 @@ public class Terminals {
     private String TerminalType;
     private String TerminalSerialNo;
     private String TerminalROMVersion;
-    private String TerminalStatus;
     private String dateCreated;
+
+    @OneToOne
+    private profiles profile;
     @ManyToOne
     private Institution institution;
 }

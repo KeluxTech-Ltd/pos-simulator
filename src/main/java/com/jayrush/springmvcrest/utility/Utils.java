@@ -20,4 +20,19 @@ public class Utils {
         return (index == 0) ? str : str.substring(index);
     }
 
+    public static String maskPanForReceipt(String pan) {
+        StringBuilder maskedPan = new StringBuilder();
+        int maskingStartIndex = 5;
+        int maskingEndIndex = pan.length() - 4;
+
+        for (int index = 0; index < pan.length(); index++) {
+            if (index >= maskingStartIndex && index < maskingEndIndex) {
+                maskedPan.append("*");
+            } else {
+                maskedPan.append(pan.charAt(index));
+            }
+        }
+        return maskedPan.toString();
+    }
+
 }

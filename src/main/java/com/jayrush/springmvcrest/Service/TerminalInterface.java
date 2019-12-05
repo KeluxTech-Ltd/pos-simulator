@@ -5,6 +5,7 @@ import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedInstitutionRequestDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TerminalListDTO;
+import com.jayrush.springmvcrest.domain.domainDTO.TerminalsDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
 public interface TerminalInterface {
     List<Terminals> getAllTerminals();
     Terminals getTerminalByID(Long id);
-    Terminals RegisterTerminal(Terminals terminals);
+    Terminals RegisterTerminal(TerminalsDTO terminals);
     Terminals EditTerminal(Terminals terminals);
     Response uploadTerminals(MultipartFile file);
     TerminalListDTO getPagenatedTerminals(PagedRequestDTO pagedTerminalsDTO);

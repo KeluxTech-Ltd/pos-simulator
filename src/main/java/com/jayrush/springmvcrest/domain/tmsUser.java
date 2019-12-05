@@ -26,8 +26,11 @@ public class tmsUser {
 
     private String password;
 
-    @ManyToOne
+
+    @ManyToOne(cascade = {CascadeType.ALL})
     private Institution institution;
 
     private roleType role;
+    @JsonIgnore
+    private boolean changePassword;
 }

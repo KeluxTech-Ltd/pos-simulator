@@ -1,12 +1,12 @@
 package com.jayrush.springmvcrest.Endpoints;
 
 import com.jayrush.springmvcrest.Service.TerminalInterface;
-import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedInstitutionRequestDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TerminalListDTO;
+import com.jayrush.springmvcrest.domain.domainDTO.TerminalsDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import springfox.documentation.swagger2.mappers.ModelMapper;
-
-import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -38,11 +36,9 @@ public class TerminalController {
     @PostMapping("/terminals")
 //    @GetMapping()
     public ResponseEntity<?> getAllTerminals(@RequestBody PagedRequestDTO pagedTerminalsDTO){
-//    public ResponseEntity<?> getAllTerminals(){
         try {
             Response response = new Response();
             TerminalListDTO terminalsList =  terminalInterface.getPagenatedTerminals(pagedTerminalsDTO);
-//            List<Terminals> terminalsList =  terminalInterface.getAllTerminals();
             response.setRespCode(SUCCESS_CODE);
             response.setRespDescription(SUCCESS);
             response.setRespBody(terminalsList);
@@ -99,7 +95,7 @@ public class TerminalController {
 
     }
     @PostMapping()
-    public ResponseEntity<?> registerTerminal(@RequestBody Terminals terminals){
+    public ResponseEntity<?> registerTerminal(@RequestBody TerminalsDTO terminals){
         try {
             Response response = new Response();
             Terminals terminal =  terminalInterface.RegisterTerminal(terminals);

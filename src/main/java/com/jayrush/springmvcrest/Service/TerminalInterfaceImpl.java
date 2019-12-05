@@ -1,5 +1,6 @@
 package com.jayrush.springmvcrest.Service;
 
+import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
 import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
@@ -7,6 +8,9 @@ import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedInstitutionRequestDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TerminalListDTO;
+import com.jayrush.springmvcrest.domain.domainDTO.TerminalsDTO;
+import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
+import com.jayrush.springmvcrest.serviceProviders.repository.profilesServiceRepo;
 import io.github.mapper.excel.ExcelMapper;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -21,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -37,6 +43,14 @@ public class TerminalInterfaceImpl implements TerminalInterface {
     @Autowired
     ModelMapper modelMapper;
 
+    @Autowired
+    profilesServiceRepo profilesServiceRepo;
+
+    @Autowired
+    InstitutionRepository institutionRepository;
+
+
+
     @Override
     public List<Terminals> getAllTerminals() {
         return terminalRepository.findAll();
@@ -48,10 +62,21 @@ public class TerminalInterfaceImpl implements TerminalInterface {
     }
 
     @Override
-    public Terminals RegisterTerminal(Terminals terminals) {
-        Date date = new Date();
-        terminals.setDateCreated(date.toString());
-        return terminalRepository.save(terminals);
+    public Terminals RegisterTerminal(TerminalsDTO terminals) {
+        profiles p = profilesServiceRepo.findByProfileName(terminals.getProfileName());
+        Institution i = institutionRepository.findByInstitutionID(terminals.getInstitutionID());
+        Terminals t = new Terminals();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        String date = simpleDateFormat.format(new Date());
+        terminals.setDateCreated(date);
+        t.setInstitution(i);
+        t.setProfile(p);
+        t.setTerminalSerialNo(terminals.getTerminalSerialNo());
+        t.setTerminalID(terminals.getTerminalID());
+        t.setTerminalType(terminals.getTerminalType());
+        t.setTerminalROMVersion(terminals.getTerminalROMVersion());
+        t.setDateCreated(date);
+        return terminalRepository.save(t);
     }
 
     @Override
@@ -66,25 +91,42 @@ public class TerminalInterfaceImpl implements TerminalInterface {
         try
         {
             Response response = new Response();
+            Terminals t = new Terminals();
             Date date = new Date();
             long mills = date.getTime();
             File file = new File(path+mills+"_terminalsUpload.xlsx");   //creating a new file instance
             uploadedFile.transferTo(file);
-            List<Terminals> terminals = mapTerminalsDataFromFile(file);
+            List<TerminalsDTO> terminals = mapTerminalsDataFromFile(file);
+            List<Terminals> terminal = new ArrayList<>();
             int sizeID = terminals.size();
 
             for (int i=0; i<sizeID; i++){
                 terminals.get(i).setId(size+i+1);
-                terminals.get(i).setDateCreated(date.toString());
-                terminalRepository.save(terminals.get(i));
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+                String Date = simpleDateFormat.format(new Date());
+                terminals.get(i).setDateCreated(Date);
+                t.setDateCreated(terminals.get(i).getDateCreated());
+                t.setTerminalROMVersion(terminals.get(i).getTerminalROMVersion());
+                t.setTerminalType(terminals.get(i).getTerminalType());
+                t.setTerminalID(terminals.get(i).getTerminalID());
+                t.setTerminalSerialNo(terminals.get(i).getTerminalSerialNo());
+
+                profiles profile = profilesServiceRepo.findByProfileName(terminals.get(i).getProfileName());
+                Institution institution = institutionRepository.findByInstitutionID(terminals.get(i).getInstitutionID());
+                t.setProfile(profile);
+                t.setInstitution(institution);
+                terminalRepository.save(t);
+                System.out.println("saved to db "+t);
+                terminal.add(i,t);
 
             }
-            response.setRespBody(terminals);
+            response.setRespBody(terminal);
             return response;
         }
         catch(Throwable e)
         {
             Response response = new Response();
+            response.setRespCode("96");
             response.setRespBody(null);
             return response;
         }
@@ -92,10 +134,10 @@ public class TerminalInterfaceImpl implements TerminalInterface {
 
 
 
-    private List<Terminals> mapTerminalsDataFromFile(File file) throws Throwable{
+    private List<TerminalsDTO> mapTerminalsDataFromFile(File file) throws Throwable{
 
-        List<Terminals> dtos = ExcelMapper.mapFromExcel(file)
-                .toObjectOf(Terminals.class)
+        List<TerminalsDTO> dtos = ExcelMapper.mapFromExcel(file)
+                .toObjectOf(TerminalsDTO.class)
                 .fromSheet(0) // if this method not used , called all sheets
                 .map();
         return dtos;

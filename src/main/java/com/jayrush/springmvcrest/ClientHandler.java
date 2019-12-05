@@ -12,8 +12,11 @@ import com.jayrush.springmvcrest.Repositories.TransactionRepository;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.Response;
+import com.jayrush.springmvcrest.domain.domainDTO.host;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
+import com.jayrush.springmvcrest.utility.Utils;
+import org.jpos.iso.ISOMsg;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +34,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
@@ -75,17 +79,33 @@ public class ClientHandler extends Thread {
             final byte[] resp = new byte[contentLength];
             dis.readFully(resp);
             String messagesent = bytesToHex(resp);
-            messageType(messagesent);
+            logMessageType(messagesent);
 
             //to log the request message
             final TerminalTransactions request = parseRequest(resp);
 
+            //todo service provider switching will be performed here
             Terminals terminals =  terminalRepository.findByterminalID(request.getTerminalID());
+            if (terminals.getTerminalID().isEmpty()){
+                logger.info("Terminal ID not registered");
+            }
+            String profile = terminals.getProfile().getProfileName();
+            host host = new host();
+            host.setHostIp(terminals.getProfile().getProfileIP());
+            host.setHostPort(terminals.getProfile().getPort());
+
+
             if (request.getAmount()!=null && !terminals.getTerminalID().isEmpty()){
+                SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
+                String date = simpleDateFormat1.format(new Date());
                 request.setInstitutionID(terminals.getInstitution().getInstitutionID());
+                request.setRequestDateTime(date);
+                //masked pan
+                request.setPan(Utils.maskPanForReceipt(request.getPan()));
                 transactionRepository.save(request);
             }
-            byte[] receivedResponse = sendTransactionToProcess(resp);
+
+            byte[] receivedResponse = sendTransactionToProcess(resp,host);
             assert receivedResponse != null;
             dos.write(receivedResponse);
             dos.flush();
@@ -104,7 +124,7 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private void messageType(String messagesent) {
+    private void logMessageType(String messagesent) {
         String asciiMessage = hexToAscii(messagesent);
 
         if (asciiMessage.startsWith("0800")){
@@ -119,20 +139,24 @@ public class ClientHandler extends Thread {
     }
 
 
-    private byte[] sendTransactionToProcess(byte[] messagePayload){
+    private byte[] sendTransactionToProcess(byte[] messagePayload,host host){
         ISO8583TransactionResponse response = null;
         ChannelSocketRequestManager socketRequester = null;
         TerminalTransactions transactions = new TerminalTransactions();
         try {
             //nibss connection
-            socketRequester = new ChannelSocketRequestManager(ipAddress, port);
+            logger.info("Host details {}",host);
+            socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
 
             //send transaction to nibss
             Response responseObj = socketRequester.toNibss(messagePayload);
 
 
             modelMapper.map(responseObj.getResponseMsg(),transactions);
+
+            //method handling pushing notification to freedom / save to db
             transaction(transactions);
+
             return responseObj.getResponseByte();
         } catch (IOException e) {
             response.setResponseCodeField39("-1");
@@ -154,13 +178,19 @@ public class ClientHandler extends Thread {
 
     private void transaction(TerminalTransactions transactions) {
         if (transactions.getAmount()!=null){
-            Date date = new Date();
-            transactions.setDateCreated(date.toString());
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+            String date = simpleDateFormat.format(new Date());
+            SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
+            String date1 = simpleDateFormat1.format(new Date());
+            transactions.setDateCreated(date);
             TerminalTransactions transactionRequest = transactionRepository.findByrrn(transactions.getRrn());
             transactionRequest.setResponseCode(transactions.getResponseCode());
             transactionRequest.setResponseDesc(transactions.getResponseDesc());
             transactionRequest.setMti(transactions.getMti());
-            transactionRequest.setDateCreated(date.toString());
+            transactionRequest.setDateCreated(date);
+            transactionRequest.setDateTime(transactions.getDateTime());
+            transactionRequest.setResponseDateTime(date);
+            transactionRequest.setTranComplete(true);
             if (transactions.getResponseCode().equals("00")){
                 transactionRequest.setStatus("Success");
             }
@@ -170,6 +200,12 @@ public class ClientHandler extends Thread {
             transactionRepository.save(transactionRequest);
         }
     }
+
+//    public static void main(String[]args){
+//        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+//        String date = simpleDateFormat.format(new Date());
+//        System.out.println(date);
+//    }
 
     public static void keyManagement(String terminalID) {
 
@@ -194,13 +230,13 @@ public class ClientHandler extends Thread {
                 return 0;
             }
         };
-        dataStore1.putString(ThamesStoreKeys.THAMES_STRING_CONFIG_COMMUNICATION_HOST_ID, "196.6.103.18");
-        dataStore1.putString(ThamesStoreKeys.THAMES_STRING_CONFIG_COMMUNICATION_PORT_DETAILS,"5009");
+        dataStore1.putString(ThamesStoreKeys.THAMES_STRING_CONFIG_COMMUNICATION_HOST_ID, "196.6.103.73");
+        dataStore1.putString(ThamesStoreKeys.THAMES_STRING_CONFIG_COMMUNICATION_PORT_DETAILS,"5043");
 
-        NibssRequestsFactory factory = new NibssRequestsFactory(dataStore1, "2101CX81");
+        NibssRequestsFactory factory = new NibssRequestsFactory(dataStore1, "2070KR43");
         OfflineCTMK offlineCTMK = new OfflineCTMK();
-        offlineCTMK.setComponentOne("386758793DE364F88319EA0D4C7091EF");
-        offlineCTMK.setComponentTwo("67A78CB3D9C1FE38C1DAB6F154D634D6");
+        offlineCTMK.setComponentOne("3BB9648A624F32C17C4037C81AD0B5CB");
+        offlineCTMK.setComponentTwo("6491A2BFEC1AD668F7CBFEC4CE1301AD");
 
 
         try {
@@ -213,6 +249,9 @@ public class ClientHandler extends Thread {
 
     }
 
+//    public static void main(String[]args){
+//        keyManagement("2070KR43");
+//    }
     private static void getKeys_Params(NibssRequestsFactory factory, OfflineCTMK offlineCTMK) {
         if (!factory.getMasterKey(offlineCTMK)) {
             logger.info("Failed to download Master Key");
@@ -272,6 +311,7 @@ public class ClientHandler extends Thread {
         IsoMessage responseMessage = null;
         try {
             responseMessage = responseMessageFactory.parseMessage(message, 0);
+            response.setTerminalID(responseMessage.getObjectValue(41).toString());
             printIsoFields(responseMessage, "ISO message ====> ");
         }
         catch (Exception e2) {
@@ -309,8 +349,8 @@ public class ClientHandler extends Thread {
             }
 
         }
-        response.setResponseCode("Pending Response");
-        response.setResponseDesc("");
+        response.setResponseCode("-1");
+        response.setResponseDesc("Pending Response / Timeout");
         logger.info("Response: {}", response.getResponseCode());
         return response;
 

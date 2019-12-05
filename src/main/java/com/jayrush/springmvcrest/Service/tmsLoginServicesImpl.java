@@ -17,6 +17,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @Service
@@ -71,13 +72,14 @@ public class tmsLoginServicesImpl implements tmsLoginServices {
 
     @Override
     public Response CreateInstitutionUser(tmsUser User) {
-        Date date = new Date();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        String date = simpleDateFormat.format(new Date());
         String body = "TMS User Details"+"\n\n\n\n" +
                 "username: "+User.getUsername()+"\n\n\n"
                 +"Password: "+User.getPassword();
         User.setPassword(passwordEncoder.encode(User.getPassword()));
         mailService.SendMail(User.getEmail(),body);
-        User.setDatecreated(date.toString());
+        User.setDatecreated(date);
         tmsUser user = userRepository.save(User);
         Response response = new Response();
         response.setRespCode("00");

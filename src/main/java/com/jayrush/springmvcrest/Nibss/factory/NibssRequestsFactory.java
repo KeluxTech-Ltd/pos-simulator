@@ -4,7 +4,6 @@
 
 package com.jayrush.springmvcrest.Nibss.factory;
 
-import com.jayrush.springmvcrest.KeysModel.Keys;
 import com.jayrush.springmvcrest.Nibss.constants.Globals;
 import com.jayrush.springmvcrest.Nibss.constants.TransactionErrorCode;
 import com.jayrush.springmvcrest.Nibss.models.store.OfflineCTMK;
@@ -46,8 +45,8 @@ public class NibssRequestsFactory
             final int counter = this.dataStore.getInt(Globals.PREF_MASTER_KEY_STAN) + 1;
             this.dataStore.putInt(Globals.PREF_MASTER_KEY_STAN, counter);
             rk.setSystemTraceAuditNumber(DataUtil.leftZeroPad(counter));
-            final String nibssIpPAddress = "196.6.103.18";
-            final int nibssPort = 5009;
+            final String nibssIpPAddress = "196.6.103.73";
+            final int nibssPort = 5043;
             IsoProcessor.setConnectionParameters(nibssIpPAddress, nibssPort);
             System.out.println(rk.toString());
             final GetMasterKeyResponse rep = IsoProcessor.process(rk);
@@ -57,7 +56,7 @@ public class NibssRequestsFactory
             rep.decryptMasterKey(ctmk);
             Globals.TMK = rep.getClearMasterKey();
             this.dataStore.putString(Globals.PREF_TMK, StringUtils.bytesToHex(rep.getClearMasterKey()));
-            Keys.eClearMasterKey = rep.getEncryptedMasterKey();
+//            Keys.eClearMasterKey = rep.getEncryptedMasterKey();
             return true;
         }
         catch (Exception e) {
@@ -77,8 +76,8 @@ public class NibssRequestsFactory
             final int counter = this.dataStore.getInt(Globals.PREF_SESSION_KEY_STAN) + 1;
             this.dataStore.putInt(Globals.PREF_SESSION_KEY_STAN, counter);
             sk.setSystemTraceAuditNumber(DataUtil.leftZeroPad(counter));
-            final String nibssIpPAddress = "196.6.103.18";
-            final int nibssPort = 5009;
+            final String nibssIpPAddress = "196.6.103.73";
+            final int nibssPort = 5043;
             IsoProcessor.setConnectionParameters(nibssIpPAddress, nibssPort);
             final GetSessionKeyResponse skResponse = IsoProcessor.process(sk);
             this.dataStore.putString(Globals.PREF_TSK_ENC, skResponse.getEncryptedSessionKey());
@@ -87,7 +86,7 @@ public class NibssRequestsFactory
             System.out.println(String.format("Session Key key -> %s", StringUtils.bytesToHex(skResponse.getClearSessionKey())));
             TerminalSessionKey = StringUtils.bytesToHex(skResponse.getClearSessionKey());
             this.dataStore.putString(Globals.PREF_TSK, StringUtils.bytesToHex(skResponse.getClearSessionKey()));
-            Keys.eClearSessionKey = skResponse.getEncryptedSessionKey();
+//            Keys.eClearSessionKey = skResponse.getEncryptedSessionKey();
             return true;
         }
         catch (Exception e) {
@@ -107,16 +106,16 @@ public class NibssRequestsFactory
             final int counter = this.dataStore.getInt(Globals.PREF_PIN_KEY_STAN) + 1;
             this.dataStore.putInt(Globals.PREF_PIN_KEY_STAN, counter);
             pk.setSystemTraceAuditNumber(DataUtil.leftZeroPad(counter));
-            final String nibssIpPAddress = "196.6.103.18";
-            final int nibssPort = 5009;
+            final String nibssIpPAddress = "196.6.103.73";
+            final int nibssPort = 5043;
             IsoProcessor.setConnectionParameters(nibssIpPAddress, nibssPort);
             final GetPinKeyResponse pkResponse = IsoProcessor.process(pk);
             this.dataStore.putString(Globals.PREF_TPK_ENC, pkResponse.getEncryptedPinKey());
             pkResponse.descryptPinKey(Globals.TMK);
             System.out.println(String.format("Pin key -> %s", StringUtils.bytesToHex(pkResponse.getClearPinKey())));
             this.dataStore.putString(Globals.PREF_TPK, StringUtils.bytesToHex(pkResponse.getClearPinKey()));
-            Keys.eClearPinKey = pkResponse.getEncryptedPinKey();
-            System.out.println("Jayrush Clear PinKey "+Keys.eClearPinKey);
+//            Keys.eClearPinKey = pkResponse.getEncryptedPinKey();
+//            System.out.println("Jayrush Clear PinKey "+Keys.eClearPinKey);
             return true;
         }
         catch (Exception e) {
@@ -136,8 +135,8 @@ public class NibssRequestsFactory
             final int counter = this.dataStore.getInt(Globals.PREF_GET_PARAMETER_STAN) + 1;
             this.dataStore.putInt(Globals.PREF_GET_PARAMETER_STAN, counter);
             parameterRequest.setSystemTraceAuditNumber(DataUtil.leftZeroPad(counter));
-            final String nibssIpPAddress = "196.6.103.18";
-            final int nibssPort = 5009;
+            final String nibssIpPAddress = "196.6.103.73";
+            final int nibssPort = 5043;
             IsoProcessor.setConnectionParameters(nibssIpPAddress, nibssPort);
             //todo parameter download sessionKey
             final String tskString = TerminalSessionKey;

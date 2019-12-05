@@ -16,6 +16,8 @@ public interface TransactionRepository extends JpaRepository<TerminalTransaction
 
     List<TerminalTransactions> findByinstitutionIDIgnoreCaseOrderByDate(String institutionID);
 
+    List<TerminalTransactions> findByProcessedAndTranComplete(boolean processed, boolean tranComplete);
+
     Page<TerminalTransactions>findByinstitutionIDAndDateCreatedBetween(String institutionID, Date from, Date to, Pageable pageable);
 
     Page<TerminalTransactions> findByinstitutionID(String institutionID, Pageable paged);

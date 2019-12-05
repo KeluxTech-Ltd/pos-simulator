@@ -1,8 +1,12 @@
 package com.jayrush.springmvcrest.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.util.List;
+
 @Data
 @Entity
 public class Institution {
@@ -11,17 +15,17 @@ public class Institution {
     private long id;
     private String institutionID;
     private String institutionName;
-    private String institutionLocation;
     private String institutionEmail;
-//    private String username;
-//    private String password;
     private String institutionPhone;
-    private String institutionAddress;
-    private String merchantAccount;
+    private String settlementAccount;
     private String createdBy;
     private String dateCreated;
-//    private String auth_token;
-    private String processorIP;
-    private String processorPort;
-    private String processorName;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    private serviceProviders serviceProviders;
+
+    private String bank;
+
+
+
 }

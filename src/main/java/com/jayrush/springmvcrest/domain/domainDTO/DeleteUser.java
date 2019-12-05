@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class DeleteUser {
-    private Long userToDeleteid;
+    private Long idToDelete;
 
     private String username;
 

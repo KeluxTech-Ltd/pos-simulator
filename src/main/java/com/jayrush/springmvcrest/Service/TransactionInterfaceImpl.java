@@ -6,20 +6,26 @@ import com.jayrush.springmvcrest.domain.domainDTO.TransactionHistoryDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionListDTO;
 import com.jayrush.springmvcrest.utility.DateUtil;
 import org.apache.commons.lang3.time.DateUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
 @Service
-@Configuration
 public class TransactionInterfaceImpl implements TransactionInterface {
+    private static final Logger logger = LoggerFactory.getLogger(TransactionInterfaceImpl.class);
+
+    @Autowired
+    TransactionInterface transactionInterface;
+
 
     private TransactionRepository transactionRepository;
 
@@ -34,14 +40,21 @@ public class TransactionInterfaceImpl implements TransactionInterface {
 
     @Override
     public TerminalTransactions saveTransactions(TerminalTransactions terminalTransactions) {
-        Date date = new Date();
-        terminalTransactions.setDateCreated(date.toString());
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        String date = simpleDateFormat.format(new Date());
+
+        terminalTransactions.setDateCreated(date);
         return transactionRepository.save(terminalTransactions);
     }
 
     @Override
     public List<TerminalTransactions> fetchTransactions() {
         return transactionRepository.findAll();
+    }
+
+    @Override
+    public List<TerminalTransactions> getAllUnnotifiedTransactions(boolean processed,boolean tranComplete) {
+        return transactionRepository.findByProcessedAndTranComplete(processed,tranComplete);
     }
 
     @Override
@@ -57,9 +70,10 @@ public class TransactionInterfaceImpl implements TransactionInterface {
 
     @Override
     public TransactionListDTO getTransactionHistory(TransactionHistoryDTO transactionHistoryReq) {
+
         TransactionListDTO transactionListDTO = new TransactionListDTO();
-//        transactionHistoryReq.setInstitutionID("FREEDOM");
         List<TerminalTransactions> historyRespDTOS;
+        List<TerminalTransactions> total = fetchTransactions();
         Page<TerminalTransactions> pagedTransactions;
         Pageable paged;
 
@@ -71,6 +85,7 @@ public class TransactionInterfaceImpl implements TransactionInterface {
         }
         if (transactionHistoryReq.getInstitutionID()==null || transactionHistoryReq.getInstitutionID().equals("")){
             pagedTransactions = transactionRepository.SelectAll(paged);
+            transactionListDTO.setTotalCount((int) pagedTransactions.getTotalElements());
         }
 
 
@@ -94,6 +109,5 @@ public class TransactionInterfaceImpl implements TransactionInterface {
         transactionListDTO.setTransactions(historyRespDTOS);
         return transactionListDTO;
     }
-
 
 }

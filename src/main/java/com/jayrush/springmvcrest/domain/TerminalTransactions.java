@@ -26,4 +26,9 @@ public class TerminalTransactions {
     private String dateCreated;
     private String institutionID;
     private String status;
+    private boolean processed = false;
+    private boolean tranComplete = false;
+    private String responseFromFreedom;
+    private String requestDateTime;
+    private String responseDateTime;
 }

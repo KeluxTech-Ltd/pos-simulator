@@ -104,15 +104,17 @@ public class ChannelSocketRequestManager
             final byte[] resp = new byte[contentLength];
             In.readFully(resp);
             final String s = new String(resp);
-//            System.out.println("To POS---> "+s);
             if (s.startsWith("0810")){
-                logger.info("ISO Network Management ( 0810 )--->"+s);
+                logger.info("ISO Network Management ( 0810 )---> {}",s);
             }
             else if (s.startsWith("0210")){
-                logger.info("Transaction Message ( 0210 )--->"+s);
+                logger.info("Transaction Message ( 0210 )---> {}",s);
             }
             else if (s.startsWith("0110")){
-                logger.info("Authorization Message ( 0110 )--->"+s);
+                logger.info("Authorization Message ( 0110 )---> {}",s);
+            }
+            else {
+                logger.info("Rersponse ---->{}",s);
             }
             final short len = (short)resp.length;
             final byte[] headBytes = DataUtil.shortToBytes(len);

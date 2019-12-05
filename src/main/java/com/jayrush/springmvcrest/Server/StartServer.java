@@ -1,7 +1,9 @@
 package com.jayrush.springmvcrest.Server;
 
 import com.jayrush.springmvcrest.CreateSocketServer;
+import com.jayrush.springmvcrest.Repositories.TransactionRepository;
 import com.jayrush.springmvcrest.Repositories.UserRepository;
+import com.jayrush.springmvcrest.Service.TransactionInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,12 @@ public class StartServer implements CommandLineRunner { //command line starter s
     private ApplicationContext applicationContext;
 
     @Autowired
+    TransactionInterface transactionInterface;
+
+    @Autowired
+    TransactionRepository transactionRepository;
+
+    @Autowired
     PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -33,6 +41,7 @@ public class StartServer implements CommandLineRunner { //command line starter s
         logger.info("##############################################################################");
         logger.info("***********************************3Line TMS**********************************");
         logger.info("Awaiting Connection\n");
+
         while (true) {
             try (AsynchronousServerSocketChannel server = AsynchronousServerSocketChannel.open())
             {
@@ -46,6 +55,4 @@ public class StartServer implements CommandLineRunner { //command line starter s
         }
     }
 
-
 }
-

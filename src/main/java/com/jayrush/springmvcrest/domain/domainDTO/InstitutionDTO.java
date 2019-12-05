@@ -1,25 +1,21 @@
 package com.jayrush.springmvcrest.domain.domainDTO;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 @Data
 public class InstitutionDTO {
+    @JsonIgnore
     private long id;
-    private String institutionID;
     private String institutionName;
-    private String institutionLocation;
     private String institutionEmail;
-    private String username;
-    private String password;
     private String institutionPhone;
-    private String institutionAddress;
-    private String merchantAccount;
+    private String settlementAccount;
     private String createdBy;
     private String dateCreated;
-    private String authToken;
-    private String processorIP;
-    private String processorPort;
-    private String processorName;
+    private String serviceProviderName;
+    private String bank;
+
 
 
 
