@@ -3,6 +3,8 @@ package com.jayrush.springmvcrest;
 
 
 import com.jayrush.springmvcrest.Nibss.network.ChannelSocketRequestManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -24,6 +26,7 @@ public class CreateSocketServer {
     private int port;
     @Autowired
     private ApplicationContext applicationContext;
+    private static Logger logger = LoggerFactory.getLogger(CreateSocketServer.class);
 
     //method to create socket
     public  void createSocket()
@@ -43,13 +46,13 @@ public class CreateSocketServer {
             {
                 // socket object to receive incoming client requests
                 socketInstance = serverSocket.accept();
-                System.out.println("Client is connected on : " + socketInstance);
+                logger.info("Client is connected on : {}" , socketInstance);
 
                 // obtaining input and out streams
                 DataInputStream inputStream = new DataInputStream(new BufferedInputStream(socketInstance.getInputStream()));
                 DataOutputStream outputStream = new DataOutputStream(socketInstance.getOutputStream());
 
-                System.out.println("Assigning new thread for this client");
+                logger.info("Assigning new thread for this client");
 
 ////            // create a new thread object
                 ChannelSocketRequestManager socketRequestManager=new ChannelSocketRequestManager();

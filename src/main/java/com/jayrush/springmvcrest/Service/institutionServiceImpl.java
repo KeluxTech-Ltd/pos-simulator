@@ -2,13 +2,13 @@ package com.jayrush.springmvcrest.Service;
 
 import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
 import com.jayrush.springmvcrest.Repositories.UserRepository;
+import com.jayrush.springmvcrest.Service.email.service.MailService;
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
 import com.jayrush.springmvcrest.domain.roleType;
 import com.jayrush.springmvcrest.domain.tmsUser;
-import com.jayrush.springmvcrest.email.MailService;
 import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import com.jayrush.springmvcrest.serviceProviders.repository.serviceProviderRepo;
 import com.jayrush.springmvcrest.utility.AppUtility;
@@ -23,7 +23,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 @Service
 public class institutionServiceImpl implements institutionservice {
     @Autowired
@@ -87,8 +90,13 @@ public class institutionServiceImpl implements institutionservice {
         String password = passwordEncoder.encode(pass);
         User.setPassword(password);
         User.setChangePassword(true);
+        Map<String, Object> params = new HashMap<>();
+        params.put("institutionName", institution.getInstitutionName());
+        params.put("institutionEmail", institution.getInstitutionEmail());
+        params.put("institutionID", institution.getInstitutionID());
+        params.put("institutionPassword", pass);
         try {
-            mailService.SendMail(User.getEmail(),body);
+            mailService.sendMail("Medusa Institution Creation",institution.getInstitutionEmail(),null,params,"institution_creation",institution.getInstitutionID());
             userRepository.save(User);
         } catch (Exception e) {
             e.printStackTrace();

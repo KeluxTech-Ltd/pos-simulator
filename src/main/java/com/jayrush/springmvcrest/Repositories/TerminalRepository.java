@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface TerminalRepository extends JpaRepository<Terminals, Long> {
     Terminals findByterminalID(String terminalID);
+    Terminals findByTerminalIDAndInstitution_InstitutionID(String terminalID, String institutionID);
     List <Terminals> findAllByDateCreatedOrderByDateCreated(String terminalID);
     Page<Terminals> findByInstitution_Id(Long institutionID, Pageable paged);
 }

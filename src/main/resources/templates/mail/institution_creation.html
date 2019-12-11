@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+
+<span>Dear </span><span th:text="${institutionName}"></span>,
+<p>Welcome to the Medusa. </p>
+
+<p>You have been created as an institution on Medusa.</p>
+
+<p>Find below your login credentials</p>
+
+<table>
+
+    <tr>
+        <td>Institution ID:</td>
+        <td th:text="${institutionID}"></td>
+    </tr>
+    <tr>
+        <td>Username:</td>
+        <td th:text="${institutionEmail}"></td>
+    </tr>
+    <tr>
+        <td>Password:</td>
+        <td th:text="${institutionPassword}"></td>
+    </tr>
+</table>
+
+<p>Regards,</p>
+<span>Support Team</span>
+</body>
+</html>

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Objects;
 
 import static com.jayrush.springmvcrest.freedom.freedomSync.SyncTrans;
 
@@ -55,6 +56,10 @@ public class institutionNotification {
                 }
                 TerminalTransactions transactionLog = transactionRepository.findByrrn(transaction.getRrn());
 
+                if (Objects.isNull(response)){
+                    logger.info("No response from Institution");
+                }
+
                 if (response.contains("\"respCode\":\"00\"")){
                     transactionLog.setProcessed(true);
                 }
@@ -62,7 +67,6 @@ public class institutionNotification {
                     transactionLog.setProcessed(false);
                 }
                 transactionLog.setResponseFromFreedom(response);
-                //todo add responsecode and description gotten from freedom to transaction log Model
                 transactionRepository.save(transactionLog);
                 logger.info("transaction successfully sent {}",transactionLog);
 

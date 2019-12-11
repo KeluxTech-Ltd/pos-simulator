@@ -2,11 +2,11 @@ package com.jayrush.springmvcrest.Service;
 
 import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
 import com.jayrush.springmvcrest.Repositories.UserRepository;
+import com.jayrush.springmvcrest.Service.email.service.MailService;
 import com.jayrush.springmvcrest.domain.*;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.tmsUserDTO;
-import com.jayrush.springmvcrest.email.MailService;
 import com.jayrush.springmvcrest.exceptions.tmsExceptions;
 import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
 import org.modelmapper.ModelMapper;
@@ -78,7 +78,7 @@ public class tmsLoginServicesImpl implements tmsLoginServices {
                 "username: "+User.getUsername()+"\n\n\n"
                 +"Password: "+User.getPassword();
         User.setPassword(passwordEncoder.encode(User.getPassword()));
-        mailService.SendMail(User.getEmail(),body);
+//        mailService.sendMail(User.getEmail(),body);
         User.setDatecreated(date);
         tmsUser user = userRepository.save(User);
         Response response = new Response();

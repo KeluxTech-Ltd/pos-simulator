@@ -117,10 +117,9 @@ public class serviceProviderController {
     public ResponseEntity<?> addProviders(@RequestBody serviceProviders serviceProviders){
         try {
             Response response = new Response();
-            serviceProviders providers = serviceProviderService.addProvider(serviceProviders);
+            response = serviceProviderService.addProvider(serviceProviders);
             response.setRespCode(SUCCESS_CODE);
             response.setRespDescription(SUCCESS);
-            response.setRespBody(providers);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (Exception e) {
             logger.info(e.getMessage());

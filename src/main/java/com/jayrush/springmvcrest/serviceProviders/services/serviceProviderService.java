@@ -14,7 +14,7 @@ public interface serviceProviderService {
     List<serviceProviders>getAllProviders();
     List<profiles>getAllProfiles();
     List<profiles>getAllProfilesbyProvidersID(Long id);
-    serviceProviders addProvider(serviceProviders serviceProviders);
+    Response addProvider(serviceProviders serviceProviders);
     serviceProviders addProfiles(profiles profiles);
     profiles editProfiles(profiles profiles);
     serviceProviders editProviders(serviceProviders serviceProviders);

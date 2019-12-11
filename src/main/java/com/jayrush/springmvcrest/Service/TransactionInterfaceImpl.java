@@ -110,4 +110,9 @@ public class TransactionInterfaceImpl implements TransactionInterface {
         return transactionListDTO;
     }
 
+    @Override
+    public TerminalTransactions getTransactionByID(Long id) {
+        return transactionRepository.findById(id).get();
+    }
+
 }

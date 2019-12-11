@@ -1,5 +1,6 @@
 package com.jayrush.springmvcrest.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import lombok.Data;
@@ -18,6 +19,8 @@ public class Terminals {
     private String TerminalSerialNo;
     private String TerminalROMVersion;
     private String dateCreated;
+    @JsonIgnore
+    private boolean isSaved;
 
     @OneToOne
     private profiles profile;

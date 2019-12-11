@@ -11,10 +11,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
@@ -34,7 +37,7 @@ public class freedomSync {
     private static final String API_VERSION = "/gravity/api";
     private static final Logger logger = LoggerFactory.getLogger(freedomSync.class);
 
-    public static String  SyncTrans(TerminalTransactions transactionRecords) throws IOException, BadPaddingException, IllegalBlockSizeException, InvalidKeyException, JSONException, NoSuchPaddingException, NoSuchAlgorithmException, DecoderException, DecoderException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+    public static String  SyncTrans(TerminalTransactions transactionRecords) throws IOException, BadPaddingException, IllegalBlockSizeException, JSONException, DecoderException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
         Gson gson = new Gson() ;
         String respBody;
         Response res = null;
@@ -44,7 +47,15 @@ public class freedomSync {
         MediaType MEDIA_TYPE = MediaType.parse("application/json");
 
         pushWithdrawalPTSPRequest pushWithdrawalPTSPRequest = new pushWithdrawalPTSPRequest();
-        pushWithdrawalPTSPRequest.setAmount(String.valueOf(transactionRecords.getAmount()));
+
+        int decimalPlaces = 2;
+        BigDecimal bigDecimalCurrency=new BigDecimal(transactionRecords.getAmount());
+        bigDecimalCurrency = bigDecimalCurrency.setScale(decimalPlaces, BigDecimal.ROUND_DOWN);
+        bigDecimalCurrency = bigDecimalCurrency.multiply(new BigDecimal(100));
+
+        String amount = bigDecimalCurrency.toString();
+
+        pushWithdrawalPTSPRequest.setAmount(amount);
         pushWithdrawalPTSPRequest.setTerminalId(transactionRecords.getTerminalID());
         pushWithdrawalPTSPRequest.setStatusCode(transactionRecords.getResponseCode());
         pushWithdrawalPTSPRequest.setPan(transactionRecords.getPan());
@@ -79,9 +90,8 @@ public class freedomSync {
         SecretKey originalKey = new SecretKeySpec(key, 0, key.length, "AES");
 
         cipher.init(Cipher.ENCRYPT_MODE, originalKey);
-        byte[] stringBytes = bodyAsString.getBytes("UTF8");
+        byte[] stringBytes = bodyAsString.getBytes(StandardCharsets.UTF_8);
         byte[] encryptedByte = cipher.doFinal(stringBytes);
-//            String encryptedString = Base64.getEncoder().encodeToString(encryptedByte);
         String encryptedString = Base64.encodeBase64String(encryptedByte);
         logger.info("encrypted is {}", encryptedString);
         jsonObject.put("request", encryptedString);

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -50,8 +51,23 @@ public class serviceProviderServiceImpl implements serviceProviderService {
     }
 
     @Override
-    public serviceProviders addProvider(serviceProviders serviceProviders) {
-        return serviceProviderRepo.save(serviceProviders);
+    public Response addProvider(serviceProviders serviceProviders) {
+        serviceProviders serviceProviders1 = new serviceProviders();
+        serviceProviders = serviceProviderRepo.findByProviderName(serviceProviders.getProviderName());
+        Response response = new Response();
+        if (Objects.isNull(serviceProviders1)){
+            serviceProviders1 = serviceProviderRepo.save(serviceProviders);
+            response.setRespBody(serviceProviders1);
+            response.setRespDescription("Success");
+            response.setRespCode("00");
+            return response;
+        }
+        else {
+            response.setRespCode("96");
+            response.setRespBody("Service Provider already Exists");
+            return response;
+        }
+
     }
 
     @Override

@@ -2,13 +2,13 @@ package com.jayrush.springmvcrest.Service;
 
 import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
 import com.jayrush.springmvcrest.Repositories.UserRepository;
+import com.jayrush.springmvcrest.Service.email.service.MailService;
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.DeleteUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.tmsUserDTO;
 import com.jayrush.springmvcrest.domain.tmsUser;
-import com.jayrush.springmvcrest.email.MailService;
 import com.jayrush.springmvcrest.exceptions.tmsExceptions;
 import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +79,7 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
                 "username: "+tmsUser.getUsername()+"\n"
                 +"Password: "+tmsUser.getPassword();
         tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
-        mailService.SendMail(tmsUser.getEmail(),body);
+//        mailService.SendMail(tmsUser.getEmail(),body);
         tmsUser.setDatecreated(date);
         return userRepository.save(tmsUser);
     }

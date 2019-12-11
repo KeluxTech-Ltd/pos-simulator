@@ -16,4 +16,5 @@ public interface TransactionInterface {
     List<TerminalTransactions> getTransactionsByinstitutionID(String terminalID);
     Page<TerminalTransactions> fetchPaginatedTransactions(TerminalTransactions terminalTransactions, Pageable pageable);
     TransactionListDTO getTransactionHistory(TransactionHistoryDTO transactionHistory);
+    TerminalTransactions getTransactionByID(Long id);
 }

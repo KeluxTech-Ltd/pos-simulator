@@ -8,11 +8,15 @@ import com.jayrush.springmvcrest.ClientHandler;
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
 
+import com.jayrush.springmvcrest.PostBridgePackager;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.domainDTO.Response;
+import com.jayrush.springmvcrest.domain.domainDTO.host;
 import com.jayrush.springmvcrest.domain.nibssresponse;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
+import org.jpos.iso.ISOException;
+import org.jpos.iso.ISOMsg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -24,10 +28,13 @@ import javax.net.ssl.X509TrustManager;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
+import java.util.Objects;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
 
@@ -81,14 +88,24 @@ public class ChannelSocketRequestManager
             final byte[] resp = new byte[contentLength];
             is.readFully(resp);
             String s = new String(resp);
-            System.out.println("The response from server for the yeye hardcoded request is "+s);
             System.out.println(s);
             return resp;
         }
         throw new IOException("Socket not connected");
     }
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
-    public Response toNibss(final byte[] Message) throws IOException, ParseException {
+    private static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
+
+    public Response toNIBSS(final byte[] Message) throws IOException, ParseException {
         if (this.socket.isConnected()) {
             Response responseObj = new Response();
             final DataOutputStream Out = new DataOutputStream(this.socket.getOutputStream());
@@ -127,6 +144,63 @@ public class ChannelSocketRequestManager
             responseObj.setResponseByte(response);
             responseObj.setResponseMsg(msg);
             return responseObj;
+        }
+        throw new IOException("Socket not connected");
+    }
+
+    public Response toISW(final byte[] Message, host host) throws IOException, ParseException, ISOException {
+        if (this.socket.isConnected()) {
+            Response responseObj = new Response();
+            //todo what is being sent to fep
+            String messagesent = bytesToHex(Message);
+
+            Socket socketconn = new Socket();
+            socketconn.setSoTimeout(60);
+            socketconn.connect(new InetSocketAddress(host.getHostIp(), host.getHostPort()));
+            if (!socketconn.isConnected()) {
+                logger.info("Connection not connected");
+            }
+            else {
+                socketconn.getOutputStream().write(Message);
+                final byte[] lenBytes = new byte[2];
+                socketconn.getInputStream().read(lenBytes);
+                if (Objects.isNull(lenBytes)){
+                    logger.info("Length of bytes is null");
+                }
+                final int contentLength = DataUtil.bytesToShort(lenBytes);
+                final byte[] resp = new byte[contentLength];
+                socketconn.getInputStream().read(resp);
+                final String s = new String(resp);
+                if (s.startsWith("0810")){
+                    logger.info("ISO Network Management ( 0810 )---> {}",s);
+                }
+                else if (s.startsWith("0210")){
+                    logger.info("Transaction Message ( 0210 )---> {}",s);
+                }
+                else if (s.startsWith("0110")){
+                    logger.info("Authorization Message ( 0110 )---> {}",s);
+                }
+                else {
+                    logger.info("Rersponse ---->{}",s);
+                }
+
+                ISOMsg iswResponse = new ISOMsg();
+                PostBridgePackager packager = new PostBridgePackager();
+                iswResponse.setPackager(packager);
+
+                iswResponse.unpack(resp);
+
+                final short len = (short)resp.length;
+                final byte[] headBytes = DataUtil.shortToBytes(len);
+                final byte[] response = concat(headBytes, resp);
+
+                final TerminalTransactions msg = parseResponse(resp);
+
+
+                responseObj.setResponseByte(response);
+                responseObj.setResponseMsg(msg);
+                return responseObj;
+            }
         }
         throw new IOException("Socket not connected");
     }

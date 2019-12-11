@@ -13,10 +13,12 @@ import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.host;
+import com.jayrush.springmvcrest.fep.ISWprocessor;
+import com.jayrush.springmvcrest.fep.RequestProcessingException;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
 import com.jayrush.springmvcrest.utility.Utils;
-import org.jpos.iso.ISOMsg;
+import org.jpos.iso.ISOException;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +61,8 @@ public class ClientHandler extends Thread {
 
     @Autowired
     ModelMapper modelMapper;
+
+
 
     // Constructor
     public ClientHandler(Socket s, DataInputStream dis, DataOutputStream dos) {
@@ -105,16 +109,23 @@ public class ClientHandler extends Thread {
                 transactionRepository.save(request);
             }
 
-            byte[] receivedResponse = sendTransactionToProcess(resp,host);
+            //todo ISW switching
+            byte[]fepMessage = null;
+            if (profile.equals("ISW")){
+                ISWprocessor processor = new ISWprocessor();
+                fepMessage =processor.toFEP(resp);
+
+            }
+
+            byte[] receivedResponse = sendTransactionToProcess(fepMessage,host);
             assert receivedResponse != null;
             dos.write(receivedResponse);
             dos.flush();
             logger.info("************Response Sent*********");
             dos.close();
 
-        } catch (IOException e) {
+        } catch (IOException | ParseException | RequestProcessingException | ISOException e) {
             logger.info(e.getMessage());
-
         } finally {
             try {
                 dos.close();
@@ -147,22 +158,27 @@ public class ClientHandler extends Thread {
             //nibss connection
             logger.info("Host details {}",host);
             socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
+            Response responseObject = new Response();
+            //send transaction to Processor
+            if (host.getHostPort()==7002){
+                responseObject = socketRequester.toISW(messagePayload,host);
+            }
+            else {
+                responseObject = socketRequester.toNIBSS(messagePayload);
+            }
 
-            //send transaction to nibss
-            Response responseObj = socketRequester.toNibss(messagePayload);
 
-
-            modelMapper.map(responseObj.getResponseMsg(),transactions);
+            modelMapper.map(responseObject.getResponseMsg(),transactions);
 
             //method handling pushing notification to freedom / save to db
             transaction(transactions);
 
-            return responseObj.getResponseByte();
+            return responseObject.getResponseByte();
         } catch (IOException e) {
             response.setResponseCodeField39("-1");
             logger.info("Failed to get Transaction response due to IO exception " , e);
             return null;
-        } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException | ParseException e) {
+        } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException | ParseException | ISOException e) {
             logger.info(e.toString());
             return null;
         } finally {
