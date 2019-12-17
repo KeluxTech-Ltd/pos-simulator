@@ -1,6 +1,7 @@
 package com.jayrush.springmvcrest.Service;
 
-import com.jayrush.springmvcrest.domain.TerminalTransactions;
+import com.jayrush.springmvcrest.Repositories.TerminalRepository;
+import com.jayrush.springmvcrest.domain.*;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionHistoryDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionListDTO;
 import org.springframework.data.domain.Page;
@@ -17,4 +18,11 @@ public interface TransactionInterface {
     Page<TerminalTransactions> fetchPaginatedTransactions(TerminalTransactions terminalTransactions, Pageable pageable);
     TransactionListDTO getTransactionHistory(TransactionHistoryDTO transactionHistory);
     TerminalTransactions getTransactionByID(Long id);
+    List<topFiveInstitutionDTO> getTopFiveInstitutions();
+    int getTotalInstitutions();
+    TransactionStatistics transactionStats();
+    int terminalCount();
+    List<List<String>> activeInactiveTerminals();
+
+//    TerminalTransactions search(String terminalid, String rrn, String stan);
 }

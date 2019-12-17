@@ -120,19 +120,10 @@ public class ChannelSocketRequestManager
             final int contentLength = DataUtil.bytesToShort(lenBytes);
             final byte[] resp = new byte[contentLength];
             In.readFully(resp);
-            final String s = new String(resp);
-            if (s.startsWith("0810")){
-                logger.info("ISO Network Management ( 0810 )---> {}",s);
-            }
-            else if (s.startsWith("0210")){
-                logger.info("Transaction Message ( 0210 )---> {}",s);
-            }
-            else if (s.startsWith("0110")){
-                logger.info("Authorization Message ( 0110 )---> {}",s);
-            }
-            else {
-                logger.info("Rersponse ---->{}",s);
-            }
+
+            //ascii response message console log
+            asciiResponseMessage(resp);
+
             final short len = (short)resp.length;
             final byte[] headBytes = DataUtil.shortToBytes(len);
             final byte[] response = concat(headBytes, resp);
@@ -146,6 +137,19 @@ public class ChannelSocketRequestManager
             return responseObj;
         }
         throw new IOException("Socket not connected");
+    }
+
+    private void asciiResponseMessage(byte[] resp) {
+        final String s = new String(resp);
+        if (s.startsWith("0810")) {
+            logger.info("ISO Network Management ( 0810 )---> {}", s);
+        } else if (s.startsWith("0210")) {
+            logger.info("Transaction Message ( 0210 )---> {}", s);
+        } else if (s.startsWith("0110")) {
+            logger.info("Authorization Message ( 0110 )---> {}", s);
+        } else {
+            logger.info("Rersponse ---->{}", s);
+        }
     }
 
     public Response toISW(final byte[] Message, host host) throws IOException, ParseException, ISOException {
@@ -170,19 +174,9 @@ public class ChannelSocketRequestManager
                 final int contentLength = DataUtil.bytesToShort(lenBytes);
                 final byte[] resp = new byte[contentLength];
                 socketconn.getInputStream().read(resp);
-                final String s = new String(resp);
-                if (s.startsWith("0810")){
-                    logger.info("ISO Network Management ( 0810 )---> {}",s);
-                }
-                else if (s.startsWith("0210")){
-                    logger.info("Transaction Message ( 0210 )---> {}",s);
-                }
-                else if (s.startsWith("0110")){
-                    logger.info("Authorization Message ( 0110 )---> {}",s);
-                }
-                else {
-                    logger.info("Rersponse ---->{}",s);
-                }
+
+                //ascii response message console log
+                asciiResponseMessage(resp);
 
                 ISOMsg iswResponse = new ISOMsg();
                 PostBridgePackager packager = new PostBridgePackager();

@@ -26,6 +26,9 @@ public class Institution {
 
     private String bank;
 
+    private boolean saved = false;
+    private String savedDescription;
+
 
 
 }

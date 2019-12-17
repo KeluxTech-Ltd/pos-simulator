@@ -19,6 +19,7 @@ public class Terminals {
     private String TerminalSerialNo;
     private String TerminalROMVersion;
     private String dateCreated;
+    private String savedDescription;
     @JsonIgnore
     private boolean isSaved;
 

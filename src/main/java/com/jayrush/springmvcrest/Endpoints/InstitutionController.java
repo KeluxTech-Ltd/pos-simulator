@@ -6,6 +6,9 @@ import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
+import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
+import com.jayrush.springmvcrest.slf4j.Logger;
+import com.jayrush.springmvcrest.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,20 +21,17 @@ import java.util.List;
 @RequestMapping(InstitutionController.BASE_URL)
 public class InstitutionController {
     public static final String BASE_URL = "/api/v1/institution";
-
+    private static final Logger logger = LoggerFactory.getLogger(InstitutionController.class);
 
     @Autowired
     institutionservice institutionService;
 
 
     @PostMapping("/institutions")
-//    @GetMapping()
     public ResponseEntity<?> GetAllInstitutions(@RequestBody PagedRequestDTO pagedTerminalsDTO){
-//    public ResponseEntity<?> GetAllInstitutions(){
         try {
             Response response = new Response();
             InstitutionListDTO institutionList =  institutionService.getPagenatedInstitutions(pagedTerminalsDTO);
-//            List<Institution> institutionList =  institutionService.getAllInstitution();
             response.setRespCode("00");
             response.setRespDescription("success");
             response.setRespBody(institutionList);

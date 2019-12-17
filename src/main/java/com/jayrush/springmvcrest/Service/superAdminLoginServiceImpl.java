@@ -53,6 +53,14 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
         }
     }
 
+    @Override
+    public Response getToken() {
+        Response response = new Response();
+        String token = jwtTokenUtil.generateToken("SuperAdmin");
+        response.setRespBody(token);
+        return response;
+    }
+
 
     @Override
     public Institution superAdminCreateInstitution(Institution institution) {

@@ -12,6 +12,7 @@ import java.util.List;
 public interface superAdminLoginService {
     Institution superAdminCreateInstitution(Institution institution);
     Response superAdminLogin(LoginDTO loginDTO);
+    Response getToken();
     List<Institution>superAdminViewInstitutions();
     List<tmsUser>superAdminViewUsers();
     tmsUser superAdminCreateUsers(tmsUser tmsUser);

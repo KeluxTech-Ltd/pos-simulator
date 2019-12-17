@@ -31,4 +31,6 @@ public class TerminalTransactions {
     private String responseFromFreedom;
     private String requestDateTime;
     private String responseDateTime;
+    private String institutionResponseCode;
+    private String institutionResponseDesc;
 }

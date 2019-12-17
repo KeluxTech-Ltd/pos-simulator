@@ -1,6 +1,7 @@
 package com.jayrush.springmvcrest.Endpoints;
 
 
+import com.jayrush.springmvcrest.Repositories.TransactionRepository;
 import com.jayrush.springmvcrest.Service.TransactionInterface;
 import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionHistoryDTO;
@@ -17,6 +18,8 @@ public class TransactionController {
 
     @Autowired
     TransactionInterface transactionInterface;
+    @Autowired
+    TransactionRepository transactionRepository;
 
 
     @PostMapping("/tranHistory")
@@ -36,8 +39,9 @@ public class TransactionController {
 
         }
     }
+
     @GetMapping("/{id}")
-    ResponseEntity<?> transactionHistory(@PathVariable Long id){
+    ResponseEntity<?> getTransactionByID(@PathVariable Long id){
         try{
             Response response = new Response();
             response.setRespBody(transactionInterface.getTransactionByID(id));
@@ -53,7 +57,6 @@ public class TransactionController {
 
         }
     }
-
 
     @RequestMapping(
             value = "/**",

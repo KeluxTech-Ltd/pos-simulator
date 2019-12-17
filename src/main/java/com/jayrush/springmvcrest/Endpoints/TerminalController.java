@@ -7,6 +7,7 @@ import com.jayrush.springmvcrest.domain.domainDTO.PagedInstitutionRequestDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TerminalListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TerminalsDTO;
+import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import springfox.documentation.swagger2.mappers.ModelMapper;
+
+import java.util.List;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
@@ -94,6 +97,7 @@ public class TerminalController {
         }
 
     }
+
     @PostMapping()
     public ResponseEntity<?> registerTerminal(@RequestBody TerminalsDTO terminals){
         try {
@@ -102,6 +106,25 @@ public class TerminalController {
             response.setRespCode(SUCCESS_CODE);
             response.setRespDescription(SUCCESS);
             response.setRespBody(terminal);
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        } catch (Exception e) {
+            Response response = new Response();
+            response.setRespCode(FAILED_CODE);
+            response.setRespDescription(FAILED);
+            response.setRespBody(null);
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        }
+
+    }
+
+    @PostMapping("/getprofilesByInstitutionName")
+    public ResponseEntity<?> getProfilesByInstitutionName(@RequestBody String institutionName){
+        try {
+            Response response = new Response();
+            List<profiles> profilesList =  terminalInterface.getProfilesByInstitutionName(institutionName);
+            response.setRespCode(SUCCESS_CODE);
+            response.setRespDescription(SUCCESS);
+            response.setRespBody(profilesList);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
             Response response = new Response();
@@ -131,7 +154,6 @@ public class TerminalController {
 
     }
 
-
     @PostMapping("/upload")
     public ResponseEntity<?> saveUploadedTerminals(@RequestBody MultipartFile file){
         if (file.isEmpty()) {
@@ -157,10 +179,6 @@ public class TerminalController {
 
 
     }
-
-
-
-
 
     @RequestMapping(
             value = "/**",

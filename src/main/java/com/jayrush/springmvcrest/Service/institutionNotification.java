@@ -1,7 +1,9 @@
 package com.jayrush.springmvcrest.Service;
 
+import com.google.gson.Gson;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
+import com.jayrush.springmvcrest.domain.hostResponse;
 import org.apache.commons.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +39,7 @@ public class institutionNotification {
     @Autowired
     TransactionRepository transactionRepository;
 
-    @Scheduled(fixedDelay = 20000)
+    @Scheduled(fixedDelay = 30000)
     @Transactional
     public void notifyInstitution(){
         logger.info("Starting transaction notification to Institution");
@@ -54,16 +56,23 @@ public class institutionNotification {
                 } catch (IOException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException | DecoderException e) {
                     logger.info(e.getMessage());
                 }
-                TerminalTransactions transactionLog = transactionRepository.findByrrn(transaction.getRrn());
+                TerminalTransactions transactionLog = transactionRepository.findById(transaction.getId()).get();
+                Gson g = new Gson();
+                hostResponse hostResponse = g.fromJson(response, hostResponse.class);
 
                 if (Objects.isNull(response)){
                     logger.info("No response from Institution");
+                    return;
                 }
 
-                if (response.contains("\"respCode\":\"00\"")){
+                if (hostResponse.getRespCode().equals("00")){
                     transactionLog.setProcessed(true);
+                    transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
+                    transactionLog.setInstitutionResponseDesc(hostResponse.getRespDesc());
                 }
                 else {
+                    transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
+                    transactionLog.setInstitutionResponseDesc(hostResponse.getRespDesc());
                     transactionLog.setProcessed(false);
                 }
                 transactionLog.setResponseFromFreedom(response);

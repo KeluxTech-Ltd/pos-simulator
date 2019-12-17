@@ -67,21 +67,66 @@ public class TerminalInterfaceImpl implements TerminalInterface {
 
     @Override
     public Terminals RegisterTerminal(TerminalsDTO terminals) {
+        Terminals t = new Terminals();
+        Terminals terminals1 = terminalRepository.findByterminalID(terminals.getTerminalID());
         profiles p = profilesServiceRepo.findByProfileName(terminals.getProfileName());
         Institution i = institutionRepository.findByInstitutionID(terminals.getInstitutionID());
-        Terminals t = new Terminals();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-        String date = simpleDateFormat.format(new Date());
-        terminals.setDateCreated(date);
-        t.setInstitution(i);
-        t.setProfile(p);
-        t.setTerminalSerialNo(terminals.getTerminalSerialNo());
-        t.setTerminalID(terminals.getTerminalID());
-        t.setTerminalType(terminals.getTerminalType());
-        t.setTerminalROMVersion(terminals.getTerminalROMVersion());
-        t.setDateCreated(date);
-        t.setSaved(true);
-        return terminalRepository.save(t);
+        if (Objects.nonNull(terminals1)){
+            t.setSavedDescription("Terminal ID already exists");
+            t.setSaved(false);
+        }
+        else if (Objects.isNull(p)){
+            t.setSaved(false);
+            t.setSavedDescription("No profile for terminal");
+        }
+        else if(Objects.isNull(i)){
+            t.setSaved(false);
+            t.setSavedDescription("Institution not found");
+        }
+        else {
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+            String date = simpleDateFormat.format(new Date());
+            terminals.setDateCreated(date);
+            t.setInstitution(i);
+            t.setProfile(p);
+            t.setTerminalSerialNo(terminals.getTerminalSerialNo());
+            t.setTerminalID(terminals.getTerminalID().toUpperCase());
+            t.setTerminalType(terminals.getTerminalType());
+            t.setTerminalROMVersion(terminals.getTerminalROMVersion());
+            t.setDateCreated(date);
+            if ((t.getTerminalType().equals(terminalType.TOPWISE.toString())))
+            {
+                t.setTerminalType(terminalType.TOPWISE.toString());
+                terminalRepository.save(t);
+                t.setSaved(true);
+                logger.info("saved to db {} ",t);
+
+            }
+            else if ((t.getTerminalType().equals(terminalType.PAX.toString())))
+            {
+                t.setTerminalType(terminalType.PAX.toString());
+                terminalRepository.save(t);
+                t.setSaved(true);
+                logger.info("saved to db {} ",t);
+
+            }
+            else if ((t.getTerminalType().equals(terminalType.TELPO.toString())))
+            {
+                t.setTerminalType(terminalType.TELPO.toString());
+                terminalRepository.save(t);
+                t.setSaved(true);
+                logger.info("saved to db {} ",t);
+
+            }
+            else {
+                logger.info("Terminal type not found for {}",t.getTerminalType());
+                t.setSaved(false);
+                t.setSavedDescription("Terminal type not found");
+
+            }
+        }
+
+        return t;
     }
 
     @Override
@@ -95,7 +140,6 @@ public class TerminalInterfaceImpl implements TerminalInterface {
         try
         {
             Response response = new Response();
-
             Date date = new Date();
             long mills = date.getTime();
             File file = new File(path+mills+"_terminalsUpload.xlsx");   //creating a new file instance
@@ -127,32 +171,38 @@ public class TerminalInterfaceImpl implements TerminalInterface {
                 if (Objects.nonNull(terminals1)){
                     logger.info("Terminal ID already Exists for {}",t.getTerminalID());
                     t.setSaved(false);
+                    t.setSavedDescription("Terminal ID already Exists");
                     terminal.add(i,t);
                 }
                 else if (Objects.isNull(profile)){
-                    logger.info("No profile Exists for {}",profile.getProfileName());
+                    logger.info("No profile Exists for {}",terminals.get(i).getProfileName());
                     t.setSaved(false);
+                    t.setSavedDescription("No profile Exists");
                     terminal.add(i,t);
                 }
                 else if (Objects.isNull(institution)){
-                    logger.info("No Institution Exists for {}",institution.getInstitutionID());
+                    logger.info("No Institution Exists for {}",terminals.get(i).getInstitutionID());
                     t.setSaved(false);
+                    t.setSavedDescription("No Institution Exists");
                     terminal.add(i,t);
                 }
                 else {
-                    if ((t.getTerminalType().equals(terminalType.TOPWISE.toString()))){
+                    if ((t.getTerminalType().equals(terminalType.TOPWISE.toString())))
+                    {
                         terminalRepository.save(t);
                         t.setSaved(true);
                         logger.info("saved to db {} ",t);
                         terminal.add(i,t);
                     }
-                    else if ((t.getTerminalType().equals(terminalType.PAX.toString()))){
+                    else if ((t.getTerminalType().equals(terminalType.PAX.toString())))
+                    {
                         terminalRepository.save(t);
                         t.setSaved(true);
                         logger.info("saved to db {} ",t);
                         terminal.add(i,t);
                     }
-                    else if ((t.getTerminalType().equals(terminalType.TELPO.toString()))){
+                    else if ((t.getTerminalType().equals(terminalType.TELPO.toString())))
+                    {
                         terminalRepository.save(t);
                         t.setSaved(true);
                         logger.info("saved to db {} ",t);
@@ -161,10 +211,9 @@ public class TerminalInterfaceImpl implements TerminalInterface {
                     else {
                         logger.info("Terminal type not found for {}",t.getTerminalType());
                         t.setSaved(false);
+                        t.setSavedDescription("Terminal type not found");
                         terminal.add(i,t);
-
                     }
-
                 }
             }
             response.setRespBody(terminal);
@@ -239,5 +288,14 @@ public class TerminalInterfaceImpl implements TerminalInterface {
         terminalListDTO.setTerminals(TerminalResp);
 
         return terminalListDTO;
+    }
+
+    @Override
+    public List<profiles> getProfilesByInstitutionName(String institutionName) {
+        Institution institution = institutionRepository.findByinstitutionName(institutionName);
+        if (Objects.nonNull(institution)){
+            return institution.getServiceProviders().getProfile();
+        }
+        return null;
     }
 }

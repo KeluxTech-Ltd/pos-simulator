@@ -2,6 +2,7 @@ package com.jayrush.springmvcrest.Repositories;
 
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.Terminals;
+import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -9,6 +9,7 @@ import com.jayrush.springmvcrest.Nibss.repository.DataStore;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
 import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
+import com.jayrush.springmvcrest.Service.email.service.MailService;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.Response;
@@ -38,8 +39,10 @@ import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
+import static com.jayrush.springmvcrest.utility.MainConverter.hexify;
 
 
 @PropertySource("classpath:application.properties")
@@ -61,6 +64,9 @@ public class ClientHandler extends Thread {
 
     @Autowired
     ModelMapper modelMapper;
+
+    @Autowired
+    MailService mailService;
 
 
 
@@ -84,21 +90,21 @@ public class ClientHandler extends Thread {
             dis.readFully(resp);
             String messagesent = bytesToHex(resp);
             logMessageType(messagesent);
+            host host = new host();
 
             //to log the request message
             final TerminalTransactions request = parseRequest(resp);
 
-            //todo service provider switching will be performed here
             Terminals terminals =  terminalRepository.findByterminalID(request.getTerminalID());
             if (terminals.getTerminalID().isEmpty()){
                 logger.info("Terminal ID not registered");
             }
+            //getting the profile setting to route transaction based on set profile for terminal ID
             String profile = terminals.getProfile().getProfileName();
-            host host = new host();
             host.setHostIp(terminals.getProfile().getProfileIP());
             host.setHostPort(terminals.getProfile().getPort());
 
-
+            //to save only transaction messages to database on transaction initialization
             if (request.getAmount()!=null && !terminals.getTerminalID().isEmpty()){
                 SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
                 String date = simpleDateFormat1.format(new Date());
@@ -109,23 +115,16 @@ public class ClientHandler extends Thread {
                 transactionRepository.save(request);
             }
 
-            //todo ISW switching
-            byte[]fepMessage = null;
+            //Host Switching based on profile setting gotten
             if (profile.equals("ISW")){
-                ISWprocessor processor = new ISWprocessor();
-                fepMessage =processor.toFEP(resp);
+                interswitchProfile(resp, host,request);
 
+            }else{
+                nibssProfile(resp, host,request);
             }
-
-            byte[] receivedResponse = sendTransactionToProcess(fepMessage,host);
-            assert receivedResponse != null;
-            dos.write(receivedResponse);
-            dos.flush();
-            logger.info("************Response Sent*********");
-            dos.close();
-
         } catch (IOException | ParseException | RequestProcessingException | ISOException e) {
             logger.info(e.getMessage());
+
         } finally {
             try {
                 dos.close();
@@ -133,6 +132,27 @@ public class ClientHandler extends Thread {
                 logger.info(e.getMessage());
             }
         }
+    }
+
+    private void nibssProfile(byte[] resp, host host,TerminalTransactions request) throws IOException {
+        byte[] receivedResponse = sendTransactionToProcess(resp, host,request);
+        assert receivedResponse != null;
+        dos.write(receivedResponse);
+        dos.flush();
+        logger.info("************Response Sent*********");
+        dos.close();
+    }
+
+    private void interswitchProfile(byte[] resp, host host, TerminalTransactions request) throws IOException, ParseException, RequestProcessingException, ISOException {
+        byte[] fepMessage;
+        ISWprocessor processor = new ISWprocessor();
+        fepMessage =processor.toFEP(resp);
+        byte[] receivedResponse = sendTransactionToProcess(fepMessage,host,request);
+        assert receivedResponse != null;
+        dos.write(receivedResponse);
+        dos.flush();
+        logger.info("************Response Sent*********");
+        dos.close();
     }
 
     private void logMessageType(String messagesent) {
@@ -150,15 +170,21 @@ public class ClientHandler extends Thread {
     }
 
 
-    private byte[] sendTransactionToProcess(byte[] messagePayload,host host){
+    private byte[] sendTransactionToProcess(byte[] messagePayload,host host,TerminalTransactions request){
         ISO8583TransactionResponse response = null;
         ChannelSocketRequestManager socketRequester = null;
         TerminalTransactions transactions = new TerminalTransactions();
+        Response responseObject = new Response();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        String Date = simpleDateFormat.format(new Date());
+        String message = hexify(messagePayload);
+        String ascii = hexToAscii(message);
+        String mti = ascii.substring(0,4);
         try {
-            //nibss connection
+            //Host Connection connection
             logger.info("Host details {}",host);
             socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
-            Response responseObject = new Response();
+
             //send transaction to Processor
             if (host.getHostPort()==7002){
                 responseObject = socketRequester.toISW(messagePayload,host);
@@ -170,13 +196,22 @@ public class ClientHandler extends Thread {
 
             modelMapper.map(responseObject.getResponseMsg(),transactions);
 
-            //method handling pushing notification to freedom / save to db
+            //save transaction response to db if response was gotten
             transaction(transactions);
 
             return responseObject.getResponseByte();
         } catch (IOException e) {
-            response.setResponseCodeField39("-1");
+            if (mti.equals("0200")){
+                TerminalTransactions transaction = transactionRepository.findByrrnAndId(request.getRrn(),request.getId());
+                transaction.setDateCreated(Date);
+                transaction.setResponseDesc("Transaction Timed out");
+                transaction.setResponseCode("-1");
+                transaction.setTranComplete(true);
+                transaction.setStatus("Failed");
+                transactionRepository.save(transaction);
+            }
             logger.info("Failed to get Transaction response due to IO exception " , e);
+            logger.info("Request Timed Out " , e);
             return null;
         } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException | ParseException | ISOException e) {
             logger.info(e.toString());
@@ -199,30 +234,40 @@ public class ClientHandler extends Thread {
             SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
             String date1 = simpleDateFormat1.format(new Date());
             transactions.setDateCreated(date);
-            TerminalTransactions transactionRequest = transactionRepository.findByrrn(transactions.getRrn());
-            transactionRequest.setResponseCode(transactions.getResponseCode());
-            transactionRequest.setResponseDesc(transactions.getResponseDesc());
-            transactionRequest.setMti(transactions.getMti());
-            transactionRequest.setDateCreated(date);
-            transactionRequest.setDateTime(transactions.getDateTime());
-            transactionRequest.setResponseDateTime(date);
-            transactionRequest.setTranComplete(true);
-            if (transactions.getResponseCode().equals("00")){
-                transactionRequest.setStatus("Success");
+            //to update the transaction status after response is gotten from host
+
+//            TerminalTransactions transactionRequest = transactionRepository.findByrrnAndId(transactions.getRrn(), transactions.getId());
+//            TerminalTransactions transactionRequest = transactionRepository.findByrrnAndStanAndTerminalIDAndAmount
+//                    (transactions.getRrn(),transactions.getStan(), transactions.getTerminalID(), transactions.getAmount());
+            TerminalTransactions transactionRequest = transactionRepository.findByrrnAndTerminalID(transactions.getRrn(),transactions.getTerminalID());
+            if (Objects.nonNull(transactionRequest)){
+                transactionRequest.setResponseCode(transactions.getResponseCode());
+                transactionRequest.setResponseDesc(transactions.getResponseDesc());
+                transactionRequest.setMti(transactions.getMti());
+                transactionRequest.setDateCreated(date);
+                transactionRequest.setDateTime(transactions.getDateTime());
+                transactionRequest.setResponseDateTime(date);
+                transactionRequest.setTranComplete(true);
+                if (transactions.getResponseCode().equals("00")){
+                    transactionRequest.setStatus("Success");
+                }
+                else{
+                    transactionRequest.setStatus("Failed");
+                }
+                transactionRepository.save(transactionRequest);
             }
-            else{
-                transactionRequest.setStatus("Failed");
+            else {
+                transactions.setResponseDesc("Cannot Find transaction using rrn and ID to map response");
+                transactions.setStatus("Failed");
+                transactionRepository.save(transactions);
             }
-            transactionRepository.save(transactionRequest);
         }
     }
 
-//    public static void main(String[]args){
-//        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-//        String date = simpleDateFormat.format(new Date());
-//        System.out.println(date);
-//    }
 
+public static void main(String [] args){
+    keyManagement("2101CX82");
+}
     public static void keyManagement(String terminalID) {
 
         DataStore dataStore1 = new DataStore() {
@@ -265,9 +310,6 @@ public class ClientHandler extends Thread {
 
     }
 
-//    public static void main(String[]args){
-//        keyManagement("2070KR43");
-//    }
     private static void getKeys_Params(NibssRequestsFactory factory, OfflineCTMK offlineCTMK) {
         if (!factory.getMasterKey(offlineCTMK)) {
             logger.info("Failed to download Master Key");
@@ -334,7 +376,7 @@ public class ClientHandler extends Thread {
             return response;
         }
 
-        if (responseMessage != null && responseMessage.hasField(4)) {
+        if (responseMessage.hasField(4) && (responseMessage.hasField(37))) {
             response.setMti("0200");
             if (responseMessage.hasField(2)) {
                 response.setPan(responseMessage.getObjectValue(2).toString());
@@ -366,7 +408,7 @@ public class ClientHandler extends Thread {
 
         }
         response.setResponseCode("-1");
-        response.setResponseDesc("Pending Response / Timeout");
+        response.setResponseDesc("Processing");
         logger.info("Response: {}", response.getResponseCode());
         return response;
 

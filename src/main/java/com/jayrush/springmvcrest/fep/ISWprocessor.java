@@ -2,12 +2,16 @@ package com.jayrush.springmvcrest.fep;
 
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
 import com.jayrush.springmvcrest.PostBridgePackager;
+import com.jayrush.springmvcrest.Service.nibssToIswInterface;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
+import com.jayrush.springmvcrest.utility.CryptoException;
 import org.jpos.iso.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.CrossOrigin;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,94 +21,101 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
+import static com.jayrush.springmvcrest.utility.MainConverter.hexify;
 
 /**
  * @author JoshuaO
  */
+
+@Component
 public class ISWprocessor {
+    @Autowired
+    nibssToIswInterface nibssToIswInterface;
+
     private static final Logger logger = LoggerFactory.getLogger(ISWprocessor.class);
 
-//    public byte[] toFEP(byte[]fromPOS) throws IOException, ParseException {
-//        StanCounter stanCounter = new StanCounter();
-//        final IsoMessage isoMessage = null;
-//        final MessageFactory<IsoMessage> responseMessageFactory = (MessageFactory<IsoMessage>) new MessageFactory();
-//        responseMessageFactory.addMessageTemplate(isoMessage);
-//        responseMessageFactory.setAssignDate(true);
-//        responseMessageFactory.setUseBinaryBitmap(false);
-//        responseMessageFactory.setUseBinaryMessages(false);
-//        responseMessageFactory.setEtx(-1);
-//        responseMessageFactory.setIgnoreLastMissingField(false);
-//        responseMessageFactory.setConfigPath(IsoProcessor.CONFIG_FILE);
-//        IsoMessage responseMessage = responseMessageFactory.parseMessage(fromPOS, 0);
-//        printIsoFields(responseMessage, "ISO message ====> ");
-//
-//
-//        ISOPackager packager = new PostBridgePackager();
-//        ISOMsg msg = new ISOMsg();
-//
-//        try {
-//            for (int i = 0; i<128; i++){
-////                if (responseMessage.hasField(i)){
-////                    System.out.println("Field value "+responseMessage.getObjectValue(i).toString());
-////                    msg.set(i,responseMessage.getObjectValue(i).toString());
-////                }
-//            }
-//            String fromPOSmessage = bytesToHex(fromPOS);
-//            String mti = toAscii(fromPOSmessage);
-//            if (mti.startsWith("0800")){
-//                ISOMsg isoMsg = new ISOMsg();
-//                Date now = new Date();
-//
-//
-//                msg.setMTI("0800");
-//                msg.set(7, ISODate.getDateTime(now));
-//                isoMsg.set(11, stanCounter.getStan());
-//                isoMsg.set(12, ISODate.getTime(now));
-//                isoMsg.set(13, ISODate.getDate(now));
-//                isoMsg.set(70, "101");
-//
-//            }
-//            else if(mti.startsWith("0200")){
-//                msg.setMTI("0200");
-//            }
-//            logger.info("Iso Message : {}" , msg);
-//            msg.setPackager(packager);
-//            byte[] data=msg.pack();
-//            byte[] fullMessage = prependLenBytes(data);
-//
-//            return fullMessage;
-//        } catch (ISOException e) {
-//            logger.info(e.getMessage());
-//            return null;
-//        }
-//    }
     public byte[] toFEP(byte[]fromPOS) throws IOException, ParseException, RequestProcessingException, ISOException {
         StanCounter stanCounter = new StanCounter();
         ISOPackager packager = new PostBridgePackager();
         ISOMsg isoMsg = new ISOMsg();
         Date now = new Date();
+        final IsoMessage isoMessage = null;
+        final MessageFactory<IsoMessage> responseMessageFactory = (MessageFactory<IsoMessage>) new MessageFactory();
+        responseMessageFactory.addMessageTemplate(isoMessage);
+        responseMessageFactory.setAssignDate(true);
+        responseMessageFactory.setUseBinaryBitmap(false);
+        responseMessageFactory.setUseBinaryMessages(false);
+        responseMessageFactory.setEtx(-1);
+        responseMessageFactory.setIgnoreLastMissingField(false);
+        responseMessageFactory.setConfigPath(IsoProcessor.CONFIG_FILE);
+        IsoMessage responseMessage = responseMessageFactory.parseMessage(fromPOS, 0);
         try {
-            isoMsg.setMTI("0800");
-        } catch (ISOException e) {
+            for (int i = 0; i<128; i++){
+                if (responseMessage.hasField(i)){
+                    switch (i){
+                        case 7:
+                            isoMsg.set(7, ISODate.getDateTime(now));
+                            break;
+                        case 11:
+                            isoMsg.set(11, stanCounter.getStan());
+                            break;
+                        case 12:
+                            isoMsg.set(12, ISODate.getTime(now));
+                            break;
+                        case 13:
+                            isoMsg.set(13, ISODate.getDate(now));
+                            break;
+                        case 15:
+                            isoMsg.set(15,ISODate.getDate(now));
+                            break;
+                        case 52:
+                            //decrypt pinblock from pos and encrypt for interswitch
+                            String pinblock = responseMessage.getObjectValue(53).toString();
+                            String posPinblock = nibssToIswInterface.decryptPinBlock(pinblock);
+                            String toIswPinblock = nibssToIswInterface.encryptPinBlock(posPinblock);
+                            isoMsg.set(52,toIswPinblock);
+                            break;
+                        default:
+                            isoMsg.set(i,responseMessage.getObjectValue(i).toString());
+                            break;
+                    }
+                }
+            }
+            String fromPOSmessage = hexify(fromPOS);
+            String asciiMessage = toAscii(fromPOSmessage);
+            String mti = asciiMessage.substring(0,4);
+            isoMsg.setMTI(mti);
+            switch (isoMsg.getMTI()){
+                case "0200":
+                    isoMsg.set(98,"5965350022|WDL|45:45:10:5");
+                    isoMsg.set(100,"628009");
+                    isoMsg.set(103,"1360876053");
+                    isoMsg.set(111,"x6JER8Y");
+                    isoMsg.set(113,"");
+                    break;
+                default:
+                    break;
+            }
+            logger.info("Interswitch ISO request");
+            for (int j = 0;j<isoMsg.getMaxField(); j++){
+                if (isoMsg.hasField(j)){
+                    logger.info("<field {}> = {}",j,isoMsg.getString(j));
+                }
+            }
+
+        } catch (ISOException | CryptoException e) {
             throw new RequestProcessingException("Could not set request mti", e);
         }
 
-        isoMsg.set(7, ISODate.getDateTime(now));
-        isoMsg.set(11, stanCounter.getStan());
-        isoMsg.set(12, ISODate.getTime(now));
-        isoMsg.set(13, ISODate.getDate(now));
-        isoMsg.set(70, "001");
 
         byte[] message;
         try {
             isoMsg.setPackager(packager);
             message = isoMsg.pack();
         } catch (ISOException e) {
-            throw new RequestProcessingException("Could not pack sign-on iso message", e);
+            throw new RequestProcessingException("Could not pack iso message", e);
         }
-
         byte[] fullMessage = prependLenBytes(message);
-
         return fullMessage;
     }
 
@@ -119,17 +130,6 @@ public class ISWprocessor {
         return output.toString();
     }
 
-    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
-
-    private static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
-            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
-        }
-        return new String(hexChars);
-    }
 
     private static byte[] prependLenBytes(byte[] data) {
         short len = (short) data.length;
@@ -139,79 +139,4 @@ public class ISWprocessor {
         System.arraycopy(data, 0, newBytes, 2, len);
         return newBytes;
     }
-
-    public static void main(String[]args){
-        ISOPackager packager = new PostBridgePackager();
-        ISOMsg msg = new ISOMsg();
-
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            PrintStream ps = new PrintStream(baos);
-            msg.setPackager(packager);
-            msg.setMTI("0800");
-            msg.set(7,"1210121715");
-            msg.set(11,"000584");
-            msg.set(12,"121715");
-            msg.set(13,"1210");
-            msg.set(70,"301");
-
-            byte[]bytes = msg.pack();
-            msg.dump(ps,"");
-
-            byte[] fullMessage = prependLenBytes(bytes);
-            String packedHex = new String(fullMessage);
-            String messagesent = bytesToHex(fullMessage);
-            System.out.println(messagesent);
-            msg.unpack(bytes);
-
-            msg.dump(ps,"");
-
-            System.out.println(msg);
-        } catch (ISOException e) {
-            e.printStackTrace();
-        }
-    }
-
-//    public ISOMsg processMessage(ISOMsg request) throws RequestProcessingException, IOException {
-//        PostBridgePackager packager = new PostBridgePackager();
-//        request.setPackager(packager);
-//
-//        byte[] message;
-//        try {
-//            message = request.pack();
-//        } catch (ISOException e) {
-//            throw new RequestProcessingException("Could not pack sign-on iso message", e);
-//        }
-//
-//
-//        byte[] fullMessage = prependLenBytes(message);
-//
-//        try {
-//            networkConfig.write(fullMessage);
-//        } catch (IOException e) {
-//            responseMatcherMap.remove(responseMatcher.getKey());
-//            throw e;
-//        }
-//
-//        try {
-//            synchronized (responseMatcher) {
-//                responseMatcher.wait(timeout);
-//            }
-//        } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt();
-//            throw new IOException("There was an error waiting for response from upstream", e);
-//        } finally {
-//            responseMatcherMap.remove(responseMatcher.getKey());
-//        }
-//
-//        if (responseMatcher.getResponse() == null) {
-//            logger.info("The Message Timed Out");
-//            transactionService.updateStatusAfterTimeout(request);
-//            throw new IOException("The message timed out");
-//        }
-//
-//        return responseMatcher.getResponse();
-//    }
-
-
 }

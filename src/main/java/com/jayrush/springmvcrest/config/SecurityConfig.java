@@ -92,7 +92,7 @@ public class SecurityConfig {
                     .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
 
                     .authorizeRequests()
-                    .antMatchers("/api/v1/login","/api/v1/superadmin/login").permitAll()
+                    .antMatchers("/api/v1/login","/api/v1/superadmin/login","/api/v1/superadmin/gettoken").permitAll()
                     .antMatchers(HttpMethod.GET, "/v2/*","/swagger-ui.html","/swagger-resources/**","/configuration/ui","/webjars/**").permitAll()
                     .antMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                     .anyRequest().authenticated();

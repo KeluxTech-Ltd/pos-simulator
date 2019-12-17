@@ -4,6 +4,7 @@ import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
+import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 
 import java.util.List;
 

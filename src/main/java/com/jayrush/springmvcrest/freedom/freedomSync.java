@@ -25,8 +25,8 @@ import java.security.NoSuchAlgorithmException;
  * @author JoshuaO
  */
 public class freedomSync {
-    private static final String INTERGRATION_VERSION_LIVE = "/integration/3BZEBY6NO1/api/v1/pos/transaction/log/";
-    private static final String APPKEY_LIVE = "3f17c995dd0d3ef409fcabe2b3f54fb6";
+    private static final String INTERGRATION_VERSION_LIVE = "/integration/8MNMZCE1BG/api/v1/pos/transaction/log/";
+    private static final String APPKEY_LIVE = "77ecdc14a4b4f2f78323a996d9e5a0f6";
     public static String BASE_URL2 = "freedom.3lineng.com:8080";
 
 //    private static final String INTERGRATION_VERSION_TEST = "/integration/A9NU2AYCA6/api/v1/pos/transaction/log/";
@@ -142,8 +142,6 @@ public class freedomSync {
         }
         count++;
         return respBody;
-//        logger.info("Transaction Number: {}", count);
-
     }
 
 

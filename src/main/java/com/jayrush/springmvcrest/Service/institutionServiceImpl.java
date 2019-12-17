@@ -9,6 +9,7 @@ import com.jayrush.springmvcrest.domain.domainDTO.InstitutionListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
 import com.jayrush.springmvcrest.domain.roleType;
 import com.jayrush.springmvcrest.domain.tmsUser;
+import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import com.jayrush.springmvcrest.serviceProviders.repository.serviceProviderRepo;
 import com.jayrush.springmvcrest.utility.AppUtility;
@@ -22,10 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class institutionServiceImpl implements institutionservice {
@@ -62,7 +60,7 @@ public class institutionServiceImpl implements institutionservice {
         serviceProviders providers = serviceProviderRepo.findByProviderName(institution.getServiceProviderName());
         institution1.setDateCreated(date);
         institution1.setInstitutionID(institutionID);
-        institution1.setInstitutionName(institution.getInstitutionName());
+        institution1.setInstitutionName(institution.getInstitutionName().toUpperCase());
         institution1.setInstitutionEmail(institution.getInstitutionEmail());
         institution1.setInstitutionPhone(institution.getInstitutionPhone());
         institution1.setSettlementAccount(institution.getSettlementAccount());
@@ -70,11 +68,28 @@ public class institutionServiceImpl implements institutionservice {
         institution1.setBank(institution.getBank());
         institution1.setServiceProviders(providers);
 
-        institutionUserCreation(institution1);
+        Institution institution2 = institutionRepository.findByinstitutionName(institution.getInstitutionName());
 
-        return institutionRepository.save(institution1);
+        if (Objects.nonNull(institution2)){
+            institution1.setSaved(false);
+            institution1.setSavedDescription("Institution already exists");
+            return institution1;
+        }
+        else if (Objects.isNull(providers)){
+            institution1.setSaved(false);
+            institution1.setSavedDescription("Service providers not found");
+            return institution1;
+        }
+        else {
+            institutionUserCreation(institution1);
+            institution1.setSavedDescription(null);
+            institution1.setSaved(true);
+            return institutionRepository.save(institution1);
+        }
+
+
     }
-
+    //method for creating an institution as a user on the tms
     private void institutionUserCreation(@RequestBody Institution institution) {
         tmsUser User = new tmsUser();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");

@@ -37,6 +37,23 @@ public class SuperAdminController {
             return new ResponseEntity<>(response,HttpStatus.OK);
         }
     }
+    @PostMapping("/gettoken")
+    public ResponseEntity<?> getToken ()
+    {
+        try
+        {
+            Response response = superAdminLoginService.getToken();
+            response.setRespCode("00");
+            response.setRespDescription("Success");
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            Response response = new Response();
+            response.setRespCode("96");
+            response.setRespDescription("Failed");
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        }
+    }
 
     @PostMapping("/createUsers")
     public ResponseEntity<?> SuperAdminCreateUsers (@RequestBody tmsUser request)

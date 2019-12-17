@@ -53,7 +53,7 @@ public class serviceProviderServiceImpl implements serviceProviderService {
     @Override
     public Response addProvider(serviceProviders serviceProviders) {
         serviceProviders serviceProviders1 = new serviceProviders();
-        serviceProviders = serviceProviderRepo.findByProviderName(serviceProviders.getProviderName());
+        serviceProviders1 = serviceProviderRepo.findByProviderName(serviceProviders.getProviderName());
         Response response = new Response();
         if (Objects.isNull(serviceProviders1)){
             serviceProviders1 = serviceProviderRepo.save(serviceProviders);
@@ -74,7 +74,7 @@ public class serviceProviderServiceImpl implements serviceProviderService {
     public serviceProviders addProfiles(profiles profiles) {
         Long id = profiles.getServiceProviders().getId();
         serviceProviders providers = serviceProviderRepo.findById(id).get();
-
+        profiles profiles2 = profilesServiceRepo.findByProfileName(profiles.getProfileName());
         List<profiles>profilesList = providers.getProfile();
 
         profiles profiles1 = new profiles();
@@ -88,7 +88,24 @@ public class serviceProviderServiceImpl implements serviceProviderService {
 
         profilesList.add(index,profiles1);
         providers.setProfile(profilesList);
-        return serviceProviderRepo.save(providers);
+
+        if (Objects.nonNull(profiles2)){
+            providers.setSaved(false);
+            providers.setSavedDescription("Profile Already Exists");
+            return providers;
+        }
+        else if (Objects.isNull(providers)){
+            providers.setSaved(false);
+            providers.setSavedDescription("Service Provider not found");
+            return providers;
+        }
+        else {
+            providers.setSaved(true);
+            providers.setSavedDescription(null);
+            return serviceProviderRepo.save(providers);
+        }
+
+
     }
 
     @Override

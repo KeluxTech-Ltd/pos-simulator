@@ -1,7 +1,9 @@
 package com.jayrush.springmvcrest.Service;
 
+import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
+import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
-import com.jayrush.springmvcrest.domain.TerminalTransactions;
+import com.jayrush.springmvcrest.domain.*;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionHistoryDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionListDTO;
 import com.jayrush.springmvcrest.utility.DateUtil;
@@ -15,7 +17,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -25,7 +31,10 @@ public class TransactionInterfaceImpl implements TransactionInterface {
 
     @Autowired
     TransactionInterface transactionInterface;
-
+    @Autowired
+    InstitutionRepository institutionRepository;
+    @Autowired
+    TerminalRepository terminalRepository;
 
     private TransactionRepository transactionRepository;
 
@@ -114,5 +123,86 @@ public class TransactionInterfaceImpl implements TransactionInterface {
     public TerminalTransactions getTransactionByID(Long id) {
         return transactionRepository.findById(id).get();
     }
+
+    @Override
+    public List<topFiveInstitutionDTO> getTopFiveInstitutions() {
+        List<topFiveInstitutionDTO> topFiveInstitutionDTOS = new ArrayList<>();
+        List<List<String>> listListn  = transactionRepository.findTopfiveInstitution();
+
+        for (int i=0; i<listListn.size();i++){
+            topFiveInstitutionDTO dto = new topFiveInstitutionDTO();
+            dto.setInstitutionID(listListn.get(i));
+            topFiveInstitutionDTOS.add(i,dto);
+        }
+        return topFiveInstitutionDTOS;
+    }
+
+    @Override
+    public int getTotalInstitutions() {
+        List<Institution> institutionList = institutionRepository.findAll();
+        int totalInstitutions = institutionList.size();
+        return totalInstitutions;
+    }
+
+    @Override
+    public TransactionStatistics transactionStats() {
+        TransactionStatistics tranStats = new TransactionStatistics();
+        List<TerminalTransactions>transactions = transactionRepository.findByStatus("Success");
+        List<TerminalTransactions>trancount = transactionRepository.findAll();
+        BigDecimal amount = new BigDecimal(0);
+        BigDecimal amount2 = new BigDecimal(0);
+        BigDecimal totalAmount = new BigDecimal(0);
+
+        for(int i = 0; i<transactions.size();i++){
+//            int decimalPlaces = 2;
+//            amount = amount.setScale(decimalPlaces, BigDecimal.ROUND_DOWN);
+//            amount=new BigDecimal(transactions.get(i).getAmount());
+//            amount = amount.add(new BigDecimal(String.valueOf(amount)));
+            String value = transactions.get(i).getAmount();
+            amount = new BigDecimal(value);
+
+
+            totalAmount = totalAmount.add(amount2.add(amount));
+            amount = null;
+        }
+
+
+
+        tranStats.setSuccess(transactionRepository.findByStatus("Success").size());
+        tranStats.setSuccess(transactionRepository.findByStatus("Failed").size());
+        tranStats.setTotalSuccessfulAmount(totalAmount);
+        tranStats.setTotalTransactions(trancount.size());
+
+        return tranStats;
+    }
+
+    @Override
+    public int terminalCount() {
+        return terminalRepository.findAll().size();
+    }
+
+    private Date yesterday() {
+        final Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -1);
+        return cal.getTime();
+    }
+    private String getYesterdayDateString() {
+        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+        return dateFormat.format(yesterday());
+    }
+    @Override
+    public List<List<String>> activeInactiveTerminals() {
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy");
+        String today = simpleDateFormat.format(new Date());
+
+        String yesterday = getYesterdayDateString();
+        return transactionRepository.findActiveTerminals(yesterday,today);
+    }
+
+//    @Override
+//    public TerminalTransactions search(String terminalid, String rrn, String stan) {
+//        return null;
+//    }
+
 
 }
