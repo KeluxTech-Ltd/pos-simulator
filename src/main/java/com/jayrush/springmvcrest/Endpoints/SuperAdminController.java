@@ -6,10 +6,11 @@ import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.DeleteUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
 import com.jayrush.springmvcrest.domain.tmsUser;
+import com.jayrush.springmvcrest.slf4j.Logger;
+import com.jayrush.springmvcrest.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/superadmin")
 public class SuperAdminController {
+    private static final Logger logger = LoggerFactory.getLogger(SuperAdminController.class);
 
     @Autowired
     superAdminLoginService superAdminLoginService;
@@ -31,6 +33,7 @@ public class SuperAdminController {
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("Failed");
@@ -48,6 +51,7 @@ public class SuperAdminController {
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("Failed");
@@ -68,6 +72,7 @@ public class SuperAdminController {
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("Failed");
@@ -85,7 +90,7 @@ public class SuperAdminController {
             response.setRespBody(institutionList);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("Failed");
@@ -105,7 +110,7 @@ public class SuperAdminController {
             response.setRespBody(userList);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("Failed");
@@ -128,6 +133,7 @@ public class SuperAdminController {
             return new ResponseEntity<>(response, HttpStatus.OK);
 
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("Failed");
@@ -145,6 +151,7 @@ public class SuperAdminController {
             response.setRespBody(institution);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("success");
@@ -164,6 +171,7 @@ public class SuperAdminController {
             response.setRespBody(user);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("success");
@@ -183,6 +191,7 @@ public class SuperAdminController {
             response.setRespBody(null);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("success");

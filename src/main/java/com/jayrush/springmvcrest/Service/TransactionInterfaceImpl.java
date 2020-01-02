@@ -6,6 +6,7 @@ import com.jayrush.springmvcrest.Repositories.TransactionRepository;
 import com.jayrush.springmvcrest.domain.*;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionHistoryDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionListDTO;
+import com.jayrush.springmvcrest.domain.domainDTO.dateRange;
 import com.jayrush.springmvcrest.utility.DateUtil;
 import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
@@ -199,10 +200,14 @@ public class TransactionInterfaceImpl implements TransactionInterface {
         return transactionRepository.findActiveTerminals(yesterday,today);
     }
 
-//    @Override
-//    public TerminalTransactions search(String terminalid, String rrn, String stan) {
-//        return null;
-//    }
+    @Override
+    public List<TerminalTransactions> repushTransactions(dateRange dateRange) {
+            List<TerminalTransactions> transactions = transactionRepository.findByInstitutionIDAndDateCreatedBetween(dateRange.getInstitutionID(), dateRange.getFrom(), dateRange.getTo());
+            for (int i = 0; i<transactions.size();i++){
+                transactions.get(i).setProcessed(false);
+                transactionRepository.save(transactions.get(i));
+            }
+            return transactions;
 
-
+    }
 }

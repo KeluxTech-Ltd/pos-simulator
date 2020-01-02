@@ -1,12 +1,12 @@
 package com.jayrush.springmvcrest.domain;
 
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Map;
 
 public class nibssresponse {
     public String ResponseCodeMap(String responseCode) {
-        Map<String, String> ResponseCodes = new Hashtable<>();
-        ResponseCodes.put("00", "Approved or Completely successful");
+        Map<String, String> ResponseCodes = new HashMap<>();
+        ResponseCodes.put("00", "Approved");
         ResponseCodes.put("01",	"Refer to card Issuer");
         ResponseCodes.put("02",	"Refer to card Issuer Special Condition");
         ResponseCodes.put("03",	"Invalid Merchant");

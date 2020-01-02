@@ -39,7 +39,7 @@ public class StartServer implements CommandLineRunner { //command line starter s
     public void run(String... args) throws Exception {
         double inf = Double.POSITIVE_INFINITY;
         logger.info("##############################################################################");
-        logger.info("***********************************3Line TMS**********************************");
+        logger.info("***********************************MEDUSA**********************************");
         logger.info("Awaiting Connection\n");
 
         while (true) {

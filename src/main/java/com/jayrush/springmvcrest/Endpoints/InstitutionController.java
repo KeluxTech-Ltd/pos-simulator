@@ -6,7 +6,6 @@ import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
-import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import com.jayrush.springmvcrest.slf4j.Logger;
 import com.jayrush.springmvcrest.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +19,12 @@ import java.util.List;
 @RestController
 @RequestMapping(InstitutionController.BASE_URL)
 public class InstitutionController {
-    public static final String BASE_URL = "/api/v1/institution";
     private static final Logger logger = LoggerFactory.getLogger(InstitutionController.class);
+    public static final String BASE_URL = "/api/v1/institution";
+    public static final String RESP_CODE = "00";
+    public static final String SUCCESS = "success";
+    public static final String RESP_CODE1 = "96";
+    public static final String FAILED = "Failed";
 
     @Autowired
     institutionservice institutionService;
@@ -32,15 +35,16 @@ public class InstitutionController {
         try {
             Response response = new Response();
             InstitutionListDTO institutionList =  institutionService.getPagenatedInstitutions(pagedTerminalsDTO);
-            response.setRespCode("00");
-            response.setRespDescription("success");
+            response.setRespCode(RESP_CODE);
+            response.setRespDescription(SUCCESS);
             response.setRespBody(institutionList);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
+
             Response response = new Response();
-            response.setRespCode("96");
-            response.setRespDescription("Failed");
+            response.setRespCode(RESP_CODE1);
+            response.setRespDescription(FAILED);
             response.setRespBody(null);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }
@@ -52,15 +56,15 @@ public class InstitutionController {
         try {
             Response response = new Response();
             List<Institution> institutionList =  institutionService.getAllInstitution();
-            response.setRespCode("00");
-            response.setRespDescription("success");
+            response.setRespCode(RESP_CODE);
+            response.setRespDescription(SUCCESS);
             response.setRespBody(institutionList);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.info(e.getMessage());
             Response response = new Response();
-            response.setRespCode("96");
-            response.setRespDescription("Failed");
+            response.setRespCode(RESP_CODE1);
+            response.setRespDescription(FAILED);
             response.setRespBody(null);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }
@@ -73,14 +77,15 @@ public class InstitutionController {
         try {
             Response response = new Response();
             Institution institution =  institutionService.getinstitutionbyid(id);
-            response.setRespCode("00");
-            response.setRespDescription("success");
+            response.setRespCode(RESP_CODE);
+            response.setRespDescription(SUCCESS);
             response.setRespBody(institution);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
-            response.setRespCode("96");
-            response.setRespDescription("success");
+            response.setRespCode(RESP_CODE1);
+            response.setRespDescription(SUCCESS);
             response.setRespBody(null);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }
@@ -92,14 +97,15 @@ public class InstitutionController {
         try {
             Response response = new Response();
             Institution institutions = institutionService.registerInstitution(institution);
-            response.setRespCode("00");
-            response.setRespDescription("success");
+            response.setRespCode(RESP_CODE);
+            response.setRespDescription(SUCCESS);
             response.setRespBody(institutions);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
-            response.setRespCode("96");
-            response.setRespDescription("Failed");
+            response.setRespCode(RESP_CODE1);
+            response.setRespDescription(FAILED);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }
 
@@ -112,14 +118,15 @@ public class InstitutionController {
         try {
             Response response = new Response();
             Institution t =  institutionService.editInstitution(institution);
-            response.setRespCode("00");
-            response.setRespDescription("success");
+            response.setRespCode(RESP_CODE);
+            response.setRespDescription(SUCCESS);
             response.setRespBody(t);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
-            response.setRespCode("96");
-            response.setRespDescription("Failed");
+            response.setRespCode(RESP_CODE1);
+            response.setRespDescription(FAILED);
             response.setRespBody(null);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }

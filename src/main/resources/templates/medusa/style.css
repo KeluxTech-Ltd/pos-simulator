@@ -1,0 +1,84 @@
+@font-face {
+    font-family: gibson;
+    src: url(fonts/gibson//Gibson-Regular.ttf);
+}
+body {
+    margin: 5px;
+    background-color: #f8fafc;
+    font-family: 'gibson';
+}
+.layout {
+    position: relative;
+    width: 50%;
+    margin: 0 auto;
+}
+.theme-color {
+    color: #037b86;
+}
+.margin-y {
+    margin: 10px 0px;
+}
+.display-block {
+    display: block;
+}
+.template-header {
+    background-color: #037b86;
+    color: #fff;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 30px 100px;
+    background-image: url('assets/bg-image.png');
+    background-position: 20%;
+}
+.template-header img {
+    height: 30px;
+    width: auto;
+}
+.template-content {
+    padding: 40px 100px;
+    background-color: #fff;
+}
+.template-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+.template-image img {
+    height: 150px;
+    width: auto;
+}
+.template-footer{
+    background-color: #242424;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Mobile Phones */
+@media (max-width: 768px){
+    .layout {
+        width: 100%;
+    }
+    .template-header {
+        padding: 20px;
+    }
+    .template-content {
+        padding: 20px;
+    }
+}
+
+/* Tablets and Ipads */
+@media (min-width: 768px) and (max-width: 1024px){
+    .layout {
+        width: 90%;
+    }
+    .template-header {
+        padding: 40px;
+    }
+    .template-content {
+        padding: 40px;
+    }
+}

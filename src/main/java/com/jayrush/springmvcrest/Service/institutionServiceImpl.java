@@ -111,7 +111,7 @@ public class institutionServiceImpl implements institutionservice {
         params.put("institutionID", institution.getInstitutionID());
         params.put("institutionPassword", pass);
         try {
-            mailService.sendMail("Medusa Institution Creation",institution.getInstitutionEmail(),null,params,"institution_creation",institution.getInstitutionID());
+            mailService.sendMail("Medusa Institution Creation",institution.getInstitutionEmail(),null,params,"institution_template",institution.getInstitutionID());
             userRepository.save(User);
         } catch (Exception e) {
             e.printStackTrace();

@@ -157,44 +157,47 @@ public class ChannelSocketRequestManager
             Response responseObj = new Response();
             //todo what is being sent to fep
             String messagesent = bytesToHex(Message);
-
             Socket socketconn = new Socket();
-            socketconn.setSoTimeout(60);
-            socketconn.connect(new InetSocketAddress(host.getHostIp(), host.getHostPort()));
-            if (!socketconn.isConnected()) {
-                logger.info("Connection not connected");
-            }
-            else {
-                socketconn.getOutputStream().write(Message);
-                final byte[] lenBytes = new byte[2];
-                socketconn.getInputStream().read(lenBytes);
-                if (Objects.isNull(lenBytes)){
-                    logger.info("Length of bytes is null");
+            try {
+                socketconn.setSoTimeout(60);
+                socketconn.connect(new InetSocketAddress(host.getHostIp(), host.getHostPort()));
+                if (!socketconn.isConnected()) {
+                    logger.info("Connection not connected");
                 }
-                final int contentLength = DataUtil.bytesToShort(lenBytes);
-                final byte[] resp = new byte[contentLength];
-                socketconn.getInputStream().read(resp);
+                else {
+                    socketconn.getOutputStream().write(Message);
+                    final byte[] lenBytes = new byte[2];
+                    socketconn.getInputStream().read(lenBytes);
+                    final int contentLength = DataUtil.bytesToShort(lenBytes);
+                    final byte[] resp = new byte[contentLength];
+                    socketconn.getInputStream().read(resp);
 
-                //ascii response message console log
-                asciiResponseMessage(resp);
+                    //ascii response message console log
+                    asciiResponseMessage(resp);
 
-                ISOMsg iswResponse = new ISOMsg();
-                PostBridgePackager packager = new PostBridgePackager();
-                iswResponse.setPackager(packager);
+                    ISOMsg iswResponse = new ISOMsg();
+                    PostBridgePackager packager = new PostBridgePackager();
+                    iswResponse.setPackager(packager);
 
-                iswResponse.unpack(resp);
+                    iswResponse.unpack(resp);
 
-                final short len = (short)resp.length;
-                final byte[] headBytes = DataUtil.shortToBytes(len);
-                final byte[] response = concat(headBytes, resp);
+                    final short len = (short)resp.length;
+                    final byte[] headBytes = DataUtil.shortToBytes(len);
+                    final byte[] response = concat(headBytes, resp);
 
-                final TerminalTransactions msg = parseResponse(resp);
+                    final TerminalTransactions msg = parseResponse(resp);
 
 
-                responseObj.setResponseByte(response);
-                responseObj.setResponseMsg(msg);
-                return responseObj;
+                    responseObj.setResponseByte(response);
+                    responseObj.setResponseMsg(msg);
+                    return responseObj;
+                }
+            } catch (Exception e) {
+                logger.info(e.getMessage());
+            }finally {
+                socketconn.close();
             }
+
         }
         throw new IOException("Socket not connected");
     }
@@ -383,9 +386,7 @@ public class ChannelSocketRequestManager
             }
         }
         response.setResponseDesc(nibssresponse.ResponseCodeMap(response.getResponseCode()));
-//        System.out.println("Response Code: {}"+ response.getResponseCode());
         logger.info("Response Code: {}", response.getResponseCode());
-//        System.out.println("Response Description: {}"+ response.getResponseDesc());
         logger.info("Response Description: {}", response.getResponseDesc());
         return response;
 

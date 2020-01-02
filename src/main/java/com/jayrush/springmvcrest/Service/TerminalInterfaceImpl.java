@@ -5,10 +5,7 @@ import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.Terminals;
-import com.jayrush.springmvcrest.domain.domainDTO.PagedInstitutionRequestDTO;
-import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
-import com.jayrush.springmvcrest.domain.domainDTO.TerminalListDTO;
-import com.jayrush.springmvcrest.domain.domainDTO.TerminalsDTO;
+import com.jayrush.springmvcrest.domain.domainDTO.*;
 import com.jayrush.springmvcrest.domain.terminalType;
 import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import com.jayrush.springmvcrest.serviceProviders.repository.profilesServiceRepo;
@@ -27,10 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @PropertySource("classpath:application.properties")
@@ -136,10 +130,11 @@ public class TerminalInterfaceImpl implements TerminalInterface {
 
     @Override
     public Response uploadTerminals(MultipartFile uploadedFile) {
-        List<Terminals> terminalsList = terminalRepository.findAll();
         try
         {
             Response response = new Response();
+            List<uploadResponseDTO> uploadResponse  = new ArrayList<>();
+
             Date date = new Date();
             long mills = date.getTime();
             File file = new File(path+mills+"_terminalsUpload.xlsx");   //creating a new file instance
@@ -151,6 +146,7 @@ public class TerminalInterfaceImpl implements TerminalInterface {
             for (int i=0; i<sizeID; i++)
             {
                 Terminals t = new Terminals();
+                uploadResponseDTO uploadResponseStatus = new uploadResponseDTO();
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
                 String Date = simpleDateFormat.format(new Date());
                 terminals.get(i).setDateCreated(Date);
@@ -173,17 +169,30 @@ public class TerminalInterfaceImpl implements TerminalInterface {
                     t.setSaved(false);
                     t.setSavedDescription("Terminal ID already Exists");
                     terminal.add(i,t);
+
+                    uploadResponseStatus.setSavedStatus(false);
+                    uploadResponseStatus.setStatusDescription("Terminal ID already Exists");
+                    uploadResponseStatus.setTerminalID(t.getTerminalID());
+                    uploadResponse.add(i,uploadResponseStatus);
                 }
                 else if (Objects.isNull(profile)){
                     logger.info("No profile Exists for {}",terminals.get(i).getProfileName());
                     t.setSaved(false);
                     t.setSavedDescription("No profile Exists");
+                    uploadResponseStatus.setSavedStatus(false);
+                    uploadResponseStatus.setStatusDescription("No profile Exists");
+                    uploadResponseStatus.setTerminalID(t.getTerminalID());
+                    uploadResponse.add(i,uploadResponseStatus);
                     terminal.add(i,t);
                 }
                 else if (Objects.isNull(institution)){
                     logger.info("No Institution Exists for {}",terminals.get(i).getInstitutionID());
                     t.setSaved(false);
                     t.setSavedDescription("No Institution Exists");
+                    uploadResponseStatus.setSavedStatus(false);
+                    uploadResponseStatus.setStatusDescription("No Institution Exists");
+                    uploadResponseStatus.setTerminalID(t.getTerminalID());
+                    uploadResponse.add(i,uploadResponseStatus);
                     terminal.add(i,t);
                 }
                 else {
@@ -192,12 +201,20 @@ public class TerminalInterfaceImpl implements TerminalInterface {
                         terminalRepository.save(t);
                         t.setSaved(true);
                         logger.info("saved to db {} ",t);
+                        uploadResponseStatus.setSavedStatus(true);
+                        uploadResponseStatus.setStatusDescription("Uploaded Successfully");
+                        uploadResponseStatus.setTerminalID(t.getTerminalID());
+                        uploadResponse.add(i,uploadResponseStatus);
                         terminal.add(i,t);
                     }
                     else if ((t.getTerminalType().equals(terminalType.PAX.toString())))
                     {
                         terminalRepository.save(t);
                         t.setSaved(true);
+                        uploadResponseStatus.setSavedStatus(true);
+                        uploadResponseStatus.setStatusDescription("Uploaded Successfully");
+                        uploadResponseStatus.setTerminalID(t.getTerminalID());
+                        uploadResponse.add(i,uploadResponseStatus);
                         logger.info("saved to db {} ",t);
                         terminal.add(i,t);
                     }
@@ -205,18 +222,26 @@ public class TerminalInterfaceImpl implements TerminalInterface {
                     {
                         terminalRepository.save(t);
                         t.setSaved(true);
+                        uploadResponseStatus.setSavedStatus(true);
+                        uploadResponseStatus.setStatusDescription("Uploaded Successfully");
+                        uploadResponseStatus.setTerminalID(t.getTerminalID());
+                        uploadResponse.add(i,uploadResponseStatus);
                         logger.info("saved to db {} ",t);
                         terminal.add(i,t);
                     }
                     else {
                         logger.info("Terminal type not found for {}",t.getTerminalType());
                         t.setSaved(false);
+                        uploadResponseStatus.setSavedStatus(false);
+                        uploadResponseStatus.setStatusDescription("Terminal Type not found");
+                        uploadResponseStatus.setTerminalID(t.getTerminalID());
+                        uploadResponse.add(i,uploadResponseStatus);
                         t.setSavedDescription("Terminal type not found");
                         terminal.add(i,t);
                     }
                 }
             }
-            response.setRespBody(terminal);
+            response.setRespBody(uploadResponse);
             return response;
         }
         catch(Throwable e)
@@ -255,7 +280,7 @@ public class TerminalInterfaceImpl implements TerminalInterface {
 
         pagedTerminals = terminalRepository.findAll(paged);
         TerminalResp = pagedTerminals.getContent();
-        if (pagedTerminals!=null && pagedTerminals.getContent().size()>0){
+        if (pagedTerminals.getContent().size() > 0){
             terminalListDTO.setHasNextRecord(pagedTerminals.hasNext());
             terminalListDTO.setTotalCount((int) pagedTerminals.getTotalElements());
         }
@@ -279,9 +304,8 @@ public class TerminalInterfaceImpl implements TerminalInterface {
         }
 
         pagedTerminals = terminalRepository.findByInstitution_Id(institution.getInstitutionID(),paged);
-//        pagedTerminals = terminalRepository.findAll(paged);
         TerminalResp = pagedTerminals.getContent();
-        if (pagedTerminals!=null && pagedTerminals.getContent().size()>0){
+        if (pagedTerminals.getContent().size() > 0){
             terminalListDTO.setHasNextRecord(pagedTerminals.hasNext());
             terminalListDTO.setTotalCount((int) pagedTerminals.getTotalElements());
         }
@@ -296,6 +320,6 @@ public class TerminalInterfaceImpl implements TerminalInterface {
         if (Objects.nonNull(institution)){
             return institution.getServiceProviders().getProfile();
         }
-        return null;
+        return Collections.emptyList() ;
     }
 }

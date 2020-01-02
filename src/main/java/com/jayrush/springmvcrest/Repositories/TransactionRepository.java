@@ -47,6 +47,8 @@ public interface TransactionRepository extends JpaRepository<TerminalTransaction
             "where date_created between ?1 and  ?2",nativeQuery = true)
     List<List<String>> findActiveTerminals(String from, String to);
 
+    List<TerminalTransactions> findByInstitutionIDAndDateCreatedBetween(String institutionID, String from, String to);
+
 
 
 }

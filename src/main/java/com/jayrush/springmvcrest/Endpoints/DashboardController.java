@@ -5,6 +5,8 @@ import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.Service.TransactionInterface;
 import com.jayrush.springmvcrest.domain.*;
 import com.jayrush.springmvcrest.domain.domainDTO.activeInstitutionDTO;
+import com.jayrush.springmvcrest.slf4j.Logger;
+import com.jayrush.springmvcrest.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping(DashboardController.BASE_URL)
 public class DashboardController {
+    private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
     public static final String BASE_URL = "/api/v1/dashboard";
     public static final String SUCCESS = "Success";
     public static final String RESP_CODE = "00";
@@ -34,15 +37,13 @@ public class DashboardController {
     TerminalRepository terminalRepository;
 
     @GetMapping("topFiveActiveInstitutions")
-    ResponseEntity<?> topFiveActiveInstitutions(){
+    public ResponseEntity<?> topFiveActiveInstitutions(){
         try{
             Response response = new Response();
-            Institution institution = new Institution();
+            Institution institution;
             List<activeInstitutionDTO> activeInstitutionDTO = new ArrayList<>();
 
-//            response.setRespBody(transactionInterface.getTopFiveInstitutions());
             List<topFiveInstitutionDTO>list= transactionInterface.getTopFiveInstitutions();
-            List<String>activeInstitution = new ArrayList<>();
             for (int i = 0;i<list.size();i++){
                 activeInstitutionDTO activeInstitutionDTO1 = new activeInstitutionDTO();
                 String value = list.get(0).getInstitutionID().get(i+1);
@@ -56,6 +57,7 @@ public class DashboardController {
             response.setRespDescription(SUCCESS);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription(FAILED);
@@ -65,7 +67,7 @@ public class DashboardController {
         }
     }
     @GetMapping("getTotalInstitutions")
-    ResponseEntity<?> getTotalInstitutions(){
+    public ResponseEntity<?> getTotalInstitutions(){
         try{
             Response response = new Response();
             response.setRespBody(transactionInterface.getTotalInstitutions());
@@ -73,6 +75,7 @@ public class DashboardController {
             response.setRespDescription(SUCCESS);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription(FAILED);
@@ -82,7 +85,7 @@ public class DashboardController {
         }
     }
     @GetMapping("transationStatistics")
-    ResponseEntity<?> transationStatistics(){
+    public ResponseEntity<?> transationStatistics(){
         try{
             Response response = new Response();
             response.setRespBody(transactionInterface.transactionStats());
@@ -90,6 +93,7 @@ public class DashboardController {
             response.setRespDescription(SUCCESS);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode(RESP_CODE1);
             response.setRespDescription(FAILED);
@@ -99,7 +103,7 @@ public class DashboardController {
         }
     }
     @GetMapping("terminalCount")
-    ResponseEntity<?> terminalCount(){
+    public ResponseEntity<?> terminalCount(){
         try{
             Response response = new Response();
             response.setRespBody(transactionInterface.terminalCount());
@@ -107,6 +111,7 @@ public class DashboardController {
             response.setRespDescription(SUCCESS);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription(FAILED);
@@ -116,7 +121,7 @@ public class DashboardController {
         }
     }
     @GetMapping("activeinactive")
-    ResponseEntity<?> activeinactive(){
+    public ResponseEntity<?> activeinactive(){
         try{
             Response response = new Response();
             List<List<String>> activeTerminals = transactionInterface.activeInactiveTerminals();
@@ -137,6 +142,7 @@ public class DashboardController {
             return new ResponseEntity<>(response,HttpStatus.OK);
 
         }catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription(FAILED);

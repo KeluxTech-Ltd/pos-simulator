@@ -17,7 +17,10 @@ import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 @Service
 public class superAdminLoginServiceImpl implements superAdminLoginService {
     @Autowired
@@ -83,12 +86,20 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         String date = simpleDateFormat.format(new Date());
         tmsUser.setUsername(tmsUser.getEmail());
-        String body = "TMS User Details"+"\n" +
-                "username: "+tmsUser.getUsername()+"\n"
-                +"Password: "+tmsUser.getPassword();
-        tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
+
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("institutionName", tmsUser.getInstitution().getInstitutionName());
+        params.put("username", tmsUser.getEmail());
+        params.put("password", tmsUser.getPassword());
 //        mailService.SendMail(tmsUser.getEmail(),body);
         tmsUser.setDatecreated(date);
+        tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
+        try {
+            mailService.sendMail("Medusa User Creation",tmsUser.getEmail(),null,params,"user_template",tmsUser.getInstitution().getInstitutionID());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return userRepository.save(tmsUser);
     }
 

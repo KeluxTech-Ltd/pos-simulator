@@ -4,6 +4,7 @@ import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.domain.*;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionHistoryDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.TransactionListDTO;
+import com.jayrush.springmvcrest.domain.domainDTO.dateRange;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -23,6 +24,7 @@ public interface TransactionInterface {
     TransactionStatistics transactionStats();
     int terminalCount();
     List<List<String>> activeInactiveTerminals();
+    List<TerminalTransactions> repushTransactions(dateRange dateRange);
 
 //    TerminalTransactions search(String terminalid, String rrn, String stan);
 }

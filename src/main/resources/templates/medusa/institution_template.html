@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Email from Medusa</title>
+    <style>
+        @font-face {
+            font-family: gibson;
+            src: url(fonts/gibson/Gibson-Regular.ttf);
+        }
+        body {
+            margin: 5px;
+            background-color: #f8fafc;
+            font-family: 'gibson';
+        }
+        .layout {
+            position: relative;
+            width: 50%;
+            margin: 0 auto;
+        }
+        .theme-color {
+            color: #037b86;
+        }
+        .margin-y {
+            margin: 10px 0px;
+        }
+        .display-block {
+            display: block;
+        }
+        .template-header {
+            background-color: #037b86;
+            color: #fff;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 30px;
+            background-image: url('https://i.ibb.co/hYd7yWb/bg-image.png');
+            background-position: 20%;
+        }
+        .template-header img {
+            height: 30px;
+            width: auto;
+        }
+        .template-content {
+            padding: 40px;
+            background-color: #fff;
+            text-align: justify;
+        }
+        .template-image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        .template-image img {
+            height: 150px;
+            width: auto;
+        }
+        .template-footer{
+            background-color: #242424;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Mobile Phones */
+        @media (max-width: 768px){
+            .layout {
+                width: 100%;
+            }
+            .template-header {
+                padding: 20px;
+            }
+            .template-content {
+                padding: 20px;
+            }
+        }
+
+        /* Tablets and Ipads */
+        @media (min-width: 768px) and (max-width: 1024px){
+            .layout {
+                width: 90%;
+            }
+            .template-header {
+                padding: 40px;
+            }
+            .template-content {
+                padding: 40px;
+            }
+        }
+    </style>
+<!--    <link rel="stylesheet" href="style.css">-->
+</head>
+<body>
+    <div class="layout">
+        <header class="template-header">
+            <img src="https://i.ibb.co/zxCwxvW/logo.png" alt="logo" border="0">
+        </header>
+        <div class="template-content">
+            <div class="template-image">
+                <img src="https://i.ibb.co/mvKP5wk/laptop.png" alt="laptop" border="0">
+            </div>            
+            <div style="font-family: gibson">
+                <p>
+                    <b class="margin-y display-block">Dear <span th:text="${institutionName}"></span>,</b>
+
+                    <div class="margin-y display-block">Welcome to Medusa! Medusa is a  centralised Terminal Management System that manages all remote terminals, institutions and users.</div>
+
+                    <div class="margin-y display-block">Below is a summary of your account information (that you can use to login on the web platform)</div>
+
+                    <div class="margin-y display-block">Institution ID: <span class="theme-color"><td th:text="${institutionID}"></td></span></div>
+
+                    <div class="margin-y display-block">Username: <span class="theme-color"><td th:text="${institutionEmail}"></td></span></div>
+
+                    <div class="margin-y display-block">Password: <span class="theme-color"<td th:text="${institutionPassword}"></td></span></div>
+
+                    <div class="margin-y display-block">You can login at: <span class="theme-color">https://www.medusa.3lineng.com</span></div> 
+
+                    <p>Thank You.</p>
+                    <p>The Medusa Team</p>
+                    <p>www.medusa.3lineng.com</p>
+                </p>
+            </div>
+        </div>
+        <footer class="template-footer">
+            <p>&copy;2019 <b>Medusa TMS</b></p>
+        </footer>
+    </div>
+</body>
+</html>

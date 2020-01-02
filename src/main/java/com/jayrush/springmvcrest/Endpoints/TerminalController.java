@@ -89,6 +89,7 @@ public class TerminalController {
             response.setRespBody(terminal);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode(FAILED_CODE);
             response.setRespDescription(FAILED);
@@ -108,6 +109,7 @@ public class TerminalController {
             response.setRespBody(terminal);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode(FAILED_CODE);
             response.setRespDescription(FAILED);
@@ -127,6 +129,7 @@ public class TerminalController {
             response.setRespBody(profilesList);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode(FAILED_CODE);
             response.setRespDescription(FAILED);
@@ -145,6 +148,7 @@ public class TerminalController {
             response.setRespBody(t);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
+            logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode(FAILED_CODE);
             response.setRespDescription(FAILED);

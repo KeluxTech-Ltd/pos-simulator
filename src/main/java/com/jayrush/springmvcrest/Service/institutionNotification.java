@@ -8,6 +8,7 @@ import org.apache.commons.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -40,6 +41,7 @@ public class institutionNotification {
     TransactionRepository transactionRepository;
 
     @Scheduled(fixedDelay = 30000)
+//    @Async
     @Transactional
     public void notifyInstitution(){
         logger.info("Starting transaction notification to Institution");
@@ -68,11 +70,11 @@ public class institutionNotification {
                 if (hostResponse.getRespCode().equals("00")){
                     transactionLog.setProcessed(true);
                     transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
-                    transactionLog.setInstitutionResponseDesc(hostResponse.getRespDesc());
+                    transactionLog.setInstitutionResponseDesc("Processed");
                 }
                 else {
                     transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
-                    transactionLog.setInstitutionResponseDesc(hostResponse.getRespDesc());
+                    transactionLog.setInstitutionResponseDesc("Not Processed");
                     transactionLog.setProcessed(false);
                 }
                 transactionLog.setResponseFromFreedom(response);

@@ -70,7 +70,7 @@ public class ISWprocessor {
                             break;
                         case 52:
                             //decrypt pinblock from pos and encrypt for interswitch
-                            String pinblock = responseMessage.getObjectValue(53).toString();
+                            String pinblock = responseMessage.getObjectValue(52).toString();
                             String posPinblock = nibssToIswInterface.decryptPinBlock(pinblock);
                             String toIswPinblock = nibssToIswInterface.encryptPinBlock(posPinblock);
                             isoMsg.set(52,toIswPinblock);
@@ -85,16 +85,12 @@ public class ISWprocessor {
             String asciiMessage = toAscii(fromPOSmessage);
             String mti = asciiMessage.substring(0,4);
             isoMsg.setMTI(mti);
-            switch (isoMsg.getMTI()){
-                case "0200":
-                    isoMsg.set(98,"5965350022|WDL|45:45:10:5");
-                    isoMsg.set(100,"628009");
-                    isoMsg.set(103,"1360876053");
-                    isoMsg.set(111,"x6JER8Y");
-                    isoMsg.set(113,"");
-                    break;
-                default:
-                    break;
+            if ("0200".equals(isoMsg.getMTI())) {
+                isoMsg.set(98, "5965350022|WDL|45:45:10:5");
+                isoMsg.set(100, "628009");
+                isoMsg.set(103, "1360876053");
+                isoMsg.set(111, "x6JER8Y");
+                isoMsg.set(113, "");
             }
             logger.info("Interswitch ISO request");
             for (int j = 0;j<isoMsg.getMaxField(); j++){
@@ -115,8 +111,7 @@ public class ISWprocessor {
         } catch (ISOException e) {
             throw new RequestProcessingException("Could not pack iso message", e);
         }
-        byte[] fullMessage = prependLenBytes(message);
-        return fullMessage;
+        return prependLenBytes(message);
     }
 
     private static String toAscii(String hexStr) {
