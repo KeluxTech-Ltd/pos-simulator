@@ -68,13 +68,6 @@ public class ISWprocessor {
                         case 15:
                             isoMsg.set(15,ISODate.getDate(now));
                             break;
-                        case 52:
-                            //decrypt pinblock from pos and encrypt for interswitch
-                            String pinblock = responseMessage.getObjectValue(52).toString();
-                            String posPinblock = nibssToIswInterface.decryptPinBlock(pinblock);
-                            String toIswPinblock = nibssToIswInterface.encryptPinBlock(posPinblock);
-                            isoMsg.set(52,toIswPinblock);
-                            break;
                         default:
                             isoMsg.set(i,responseMessage.getObjectValue(i).toString());
                             break;
@@ -99,7 +92,7 @@ public class ISWprocessor {
                 }
             }
 
-        } catch (ISOException | CryptoException e) {
+        } catch (ISOException e) {
             throw new RequestProcessingException("Could not set request mti", e);
         }
 

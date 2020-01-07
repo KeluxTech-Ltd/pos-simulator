@@ -405,13 +405,13 @@ public class IsoProcessor
         ChannelSocketRequestManager socketRequester = null;
         try {
             final IsoMessage isoMessage = null;
-            //final byte[] bites = null;
-            //final int length = bites.length;
-            //final byte[] temp = new byte[length - 64];
-            /*if (length >= 64) {
+            final byte[] bites = null;
+            final int length = bites.length;
+            final byte[] temp = new byte[length - 64];
+            if (length >= 64) {
                 System.arraycopy(bites, 0, temp, 0, length - 64);
-            }*/
-            /*if (request.hashMessage()) {
+            }
+            if (request.hashMessage()) {
                 final String hashHex = generateHash256Value(temp, sessionKey);
                 final IsoValue<String> field128update = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)hashHex, 64);
                 isoMessage.setField(128, (IsoValue)field128update);
@@ -419,7 +419,7 @@ public class IsoProcessor
             }
             else {
                 System.out.println("Message not hashed");
-            }*/
+            }
             //printIsoFields(isoMessage, String.format("%04x request", request.getMessageType()));
 
             System.out.println("Message to send {}"+ (Object)new String(Message));

@@ -1,9 +1,15 @@
 package com.jayrush.springmvcrest.Service;
 
 import com.google.gson.Gson;
+import com.jayrush.springmvcrest.ClientHandler;
+import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
+import com.jayrush.springmvcrest.Repositories.terminalKeysRepo;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
+import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.hostResponse;
+import com.jayrush.springmvcrest.domain.terminalKeyManagement;
+import com.jayrush.springmvcrest.utility.CryptoException;
 import org.apache.commons.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,13 +23,19 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import java.awt.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
 
 import static com.jayrush.springmvcrest.freedom.freedomSync.SyncTrans;
+import static com.jayrush.springmvcrest.utility.AppUtility.randomNumber;
+import static com.jayrush.springmvcrest.utility.AppUtility.randomString;
 
 /**
  * @author JoshuaO
@@ -40,8 +52,13 @@ public class institutionNotification {
     @Autowired
     TransactionRepository transactionRepository;
 
-    @Scheduled(fixedDelay = 30000)
-//    @Async
+    @Autowired
+    TerminalRepository terminalRepository;
+
+    @Autowired
+    terminalKeysRepo terminalKeysRepo;
+
+//    @Scheduled(fixedDelay = 20000)
     @Transactional
     public void notifyInstitution(){
         logger.info("Starting transaction notification to Institution");
@@ -64,7 +81,7 @@ public class institutionNotification {
 
                 if (Objects.isNull(response)){
                     logger.info("No response from Institution");
-                    return;
+
                 }
 
                 if (hostResponse.getRespCode().equals("00")){
@@ -85,4 +102,52 @@ public class institutionNotification {
             }
         }
     }
+
+    @Scheduled(fixedDelay = 86400000)
+    public void start(){
+
+        Socket s = null;
+        DataInputStream dis = null;
+        DataOutputStream dos = null;
+        ClientHandler clientHandler = new ClientHandler(s, dis,dos);
+        List<Terminals> terminalsList = terminalRepository.findAll();
+        for (int i = 0; i<terminalsList.size(); i++){
+            terminalKeyManagement key = clientHandler.keyManagement(terminalsList.get(i));
+            key.setId(terminalsList.get(i).getId());
+            terminalKeysRepo.save(key);
+        }
+
+    }
+
+
+
+
+//    //todo generate ctmk, pinkey, masterkey, encrypted master/pinkey
+//    public static void main(String []args) throws CryptoException {
+//        nibssToIswInterface nibssToIswInterface = new nibssToIswInterfaceImpl();
+//        String ctmk = "26225551015548232507011317342780";
+//        String ClearMasterkey = "27869791275814834349579874090163";
+//
+//        System.out.println("Clear masterKey is = "+ClearMasterkey);
+//        String encryptedMasterkey = nibssToIswInterface.encryptPinBlock(ClearMasterkey,ctmk);
+//        System.out.println("Encrypted masterkey = "+encryptedMasterkey);
+//
+//
+//        String decryptedMasterKey = nibssToIswInterface.decryptPinBlock(encryptedMasterkey,ctmk);
+//        System.out.println("Clear masterkey is = "+decryptedMasterKey);
+//
+//        String pinkey = randomNumber(32);
+//        System.out.println("The Generated pinkey is = "+pinkey);
+//        String EncryptedPinKey = nibssToIswInterface.encryptPinBlock(pinkey,ClearMasterkey);
+//        System.out.println("Encrypted PinKey is = "+EncryptedPinKey);
+//
+//        String DecryptedPinKey = nibssToIswInterface.decryptPinBlock(EncryptedPinKey,ClearMasterkey);
+//        System.out.println("The decrypted pinKey is "+DecryptedPinKey);
+//
+//
+//
+//
+//    }
 }
+
+
