@@ -103,7 +103,7 @@ public class institutionNotification {
         }
     }
 
-    @Scheduled(fixedDelay = 86400000)
+//    @Scheduled(fixedDelay = 86400000)
     public void start(){
 
         Socket s = null;
