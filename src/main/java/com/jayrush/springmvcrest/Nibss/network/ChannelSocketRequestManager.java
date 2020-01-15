@@ -8,13 +8,17 @@ import com.jayrush.springmvcrest.ClientHandler;
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
 
+import com.jayrush.springmvcrest.Nibss.utils.StringUtils;
 import com.jayrush.springmvcrest.PostBridgePackager;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.domainDTO.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.host;
 import com.jayrush.springmvcrest.domain.nibssresponse;
+import com.jayrush.springmvcrest.fep.ISWprocessor;
+import com.jayrush.springmvcrest.fep.RequestProcessingException;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
+import org.jpos.iso.ISODate;
 import org.jpos.iso.ISOException;
 import org.jpos.iso.ISOMsg;
 import org.slf4j.Logger;
@@ -34,6 +38,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
+import java.util.Date;
 import java.util.Objects;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
@@ -121,6 +126,8 @@ public class ChannelSocketRequestManager
             final byte[] resp = new byte[contentLength];
             In.readFully(resp);
 
+
+
             //ascii response message console log
             asciiResponseMessage(resp);
 
@@ -152,19 +159,22 @@ public class ChannelSocketRequestManager
         }
     }
 
-    public Response toISW(final byte[] Message, host host) throws IOException, ParseException, ISOException {
+    public Response toISW(final byte[] Message, host host) throws IOException, ISOException {
         if (this.socket.isConnected()) {
             Response responseObj = new Response();
+            ISWprocessor processor = new ISWprocessor();
             //todo what is being sent to fep
             String messagesent = bytesToHex(Message);
             Socket socketconn = new Socket();
             try {
-                socketconn.setSoTimeout(60);
+//                socketconn.connect(new InetSocketAddress("10.2.2.65", 7003));
                 socketconn.connect(new InetSocketAddress(host.getHostIp(), host.getHostPort()));
+                socketconn.setSoTimeout(60000);
                 if (!socketconn.isConnected()) {
                     logger.info("Connection not connected");
                 }
                 else {
+                    ISWprocessor isWprocessor = new ISWprocessor();
                     socketconn.getOutputStream().write(Message);
                     final byte[] lenBytes = new byte[2];
                     socketconn.getInputStream().read(lenBytes);
@@ -175,18 +185,13 @@ public class ChannelSocketRequestManager
                     //ascii response message console log
                     asciiResponseMessage(resp);
 
-                    ISOMsg iswResponse = new ISOMsg();
-                    PostBridgePackager packager = new PostBridgePackager();
-                    iswResponse.setPackager(packager);
+                    byte []tonibssresponse = processor.toPOS(resp);
 
-                    iswResponse.unpack(resp);
-
-                    final short len = (short)resp.length;
+                    final short len = (short)tonibssresponse.length;
                     final byte[] headBytes = DataUtil.shortToBytes(len);
-                    final byte[] response = concat(headBytes, resp);
+                    final byte[] response = concat(headBytes, tonibssresponse);
 
-                    final TerminalTransactions msg = parseResponse(resp);
-
+                    final TerminalTransactions msg = parseResponse(tonibssresponse);
 
                     responseObj.setResponseByte(response);
                     responseObj.setResponseMsg(msg);

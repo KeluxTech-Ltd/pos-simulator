@@ -871,21 +871,17 @@ public class IsoProcessor
         if (isoMessage == null) {
             return;
         }
-//        System.out.println("==================================================");
         logger.info("==================================================");
-//        System.out.println(type);
         logger.info(type);
         for (int index = 1; index <= 128; ++index) {
             if (isoMessage.hasField(index)) {
-//                System.out.println("field " + index + ": " + isoMessage.getAt(index).getValue());
-                logger.info("field " + index + ": " + isoMessage.getAt(index).getValue());
+
+                logger.info("field {} : {}" , index , isoMessage.getAt(index).getValue());
             }
         }
-       // System.out.println("==================================================");
     }
     
     static {
-       // IsoProcessor.logger = LoggerFactory.getLogger(IsoProcessor.class.toString());
         IsoProcessor.NIBSS_IP = null;
         IsoProcessor.NIBSS_PORT = 0;
         IsoProcessor.CONFIG_FILE = Globals.ISO_CONFIG_FILE;

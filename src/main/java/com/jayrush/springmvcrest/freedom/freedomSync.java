@@ -25,13 +25,13 @@ import java.security.NoSuchAlgorithmException;
  * @author JoshuaO
  */
 public class freedomSync {
-    private static final String INTERGRATION_VERSION_LIVE = "/integration/8MNMZCE1BG/api/v1/pos/transaction/log/";
-    private static final String APPKEY_LIVE = "77ecdc14a4b4f2f78323a996d9e5a0f6";
-    public static String BASE_URL2 = "freedom.3lineng.com:8080";
+//    private static final String INTERGRATION_VERSION_LIVE = "/integration/8MNMZCE1BG/api/v1/pos/transaction/log/";
+//    private static final String APPKEY_LIVE = "77ecdc14a4b4f2f78323a996d9e5a0f6";
+//    public static String BASE_URL2 = "freedom.3lineng.com:8080";
 
-//    private static final String INTERGRATION_VERSION_TEST = "/integration/A9NU2AYCA6/api/v1/pos/transaction/log/";
-//    private static final String APPKEY_TEST = "b697772320da7258386eb3b002833d13";
-//    public static String BASE_URL2 = "10.2.2.47:7070";
+    private static final String INTERGRATION_VERSION_TEST = "/integration/A9NU2AYCA6/api/v1/pos/transaction/log/";
+    private static final String APPKEY_TEST = "b697772320da7258386eb3b002833d13";
+    public static String BASE_URL2 = "10.2.2.47:7070";
 
     public static int DEFAULT = 0;
     private static final String API_VERSION = "/gravity/api";
@@ -42,7 +42,7 @@ public class freedomSync {
         String respBody;
         Response res = null;
         int count = 0;
-        String url = "http://" + BASE_URL2 + INTERGRATION_VERSION_LIVE;
+        String url = "http://" + BASE_URL2 + INTERGRATION_VERSION_TEST;
 
         MediaType MEDIA_TYPE = MediaType.parse("application/json");
 
@@ -84,7 +84,7 @@ public class freedomSync {
         JSONObject jsonObject = new JSONObject();
         String bodyAsString = gson.toJson(pushWithdrawalPTSPRequest);
         logger.info("JSON TO STRING {}", bodyAsString);
-        byte [] key = Hex.decodeHex(APPKEY_LIVE.toCharArray());
+        byte [] key = Hex.decodeHex(APPKEY_TEST.toCharArray());
         Cipher cipher = Cipher.getInstance("AES");
 
         SecretKey originalKey = new SecretKeySpec(key, 0, key.length, "AES");

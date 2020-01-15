@@ -10,6 +10,7 @@ import com.jayrush.springmvcrest.Nibss.repository.DataStore;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
 import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
+import com.jayrush.springmvcrest.Repositories.globalSettingsRepo;
 import com.jayrush.springmvcrest.Repositories.terminalKeysRepo;
 import com.jayrush.springmvcrest.Service.email.service.MailService;
 import com.jayrush.springmvcrest.Service.nibssToIswInterface;
@@ -18,6 +19,7 @@ import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.host;
 import com.jayrush.springmvcrest.domain.domainDTO.keys;
+import com.jayrush.springmvcrest.domain.globalSettings;
 import com.jayrush.springmvcrest.domain.terminalKeyManagement;
 import com.jayrush.springmvcrest.fep.ISWprocessor;
 import com.jayrush.springmvcrest.fep.RequestProcessingException;
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -57,10 +60,7 @@ import static com.jayrush.springmvcrest.utility.MainConverter.hexify;
 @PropertySource("classpath:application.properties")
 public class ClientHandler extends Thread {
     private static Logger logger = LoggerFactory.getLogger(ClientHandler.class);
-    private static String encryptedSessionKey;
     private byte[] clearSessionKey;
-    private String encryptedMasterKey;
-    private byte[] clearMasterKey;
     final DataInputStream dis;
     final DataOutputStream dos;
     final Socket s;
@@ -87,6 +87,9 @@ public class ClientHandler extends Thread {
     @Autowired
     nibssToIswInterface nibssToIswInterface;
 
+    @Autowired
+    globalSettingsRepo globalSettingsRepo;
+
 
     // Constructor
     public ClientHandler(Socket s, DataInputStream dis, DataOutputStream dos) {
@@ -100,8 +103,6 @@ public class ClientHandler extends Thread {
     @Override
     public void run() {
         try {
-            //method to generate keys for all terminals
-//            getKeysForAllTerminalID();
             logger.info("AWaiting data------------------------------------------");
             final byte[] lenBytes = new byte[2];
             dis.readFully(lenBytes);
@@ -124,7 +125,9 @@ public class ClientHandler extends Thread {
             }
 
             //getting the profile setting to route transaction based on set profile for terminal ID
+
             String profile = terminals.getProfile().getProfileName();
+            host.setHostName(terminals.getProfile().getProfileName());
             host.setHostIp(terminals.getProfile().getProfileIP());
             host.setHostPort(terminals.getProfile().getPort());
 
@@ -183,111 +186,52 @@ public class ClientHandler extends Thread {
         byte[] sessionKeyBytes = StringUtils.hexStringToByteArray(terminalKeyManagement.getSessionKey());
         byte[] msgtosend;
         String pinblock = msg.getObjectValue(52);
+        String tmsKey = "28300518865986737073478883921518";//tmsKey for decrypting all request message pinblock
+        String iswkey = "D15397C2CECD23B8DF5FE430920E55D6";//isw static key to encrypt interswitch request pinblock
+
         if (Objects.nonNull(pinblock)) {
             //decrypt pinblock using static keys shared with terminals
-            String tmsKey = "28300518865986737073478883921518";
             String newPinblock = nibssToIswInterface.decryptPinBlock(pinblock, tmsKey);
+            System.out.println("The Clear Pinblock = "+newPinblock);
             if (profile.equals("ISW")) {
-                String iswkey = "11111111111111111111111111111111";//isw static key
                 String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock, iswkey);
+//                String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock);
+                System.out.println("Encrypted Pinblock to send is :: "+iswPinblock);
                 final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) iswPinblock.toUpperCase(), 16);
-
                 msg.setField(52, (IsoValue) field52);
 
             } else {
                 //get nibss pinkey for terminalID
                 String nibssPinBlock = nibssToIswInterface.encryptPinBlock(newPinblock, terminalKeyManagement.getPinKey());
+                System.out.println("Encrypted Pinblock to send is :: "+nibssPinBlock);
                 final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) nibssPinBlock.toUpperCase(), 16);
                 msg.setField(52, (IsoValue) field52);
             }
-
-            final byte[] bites = msg.writeData();
-            final int length = bites.length;
-            final byte[] temp = new byte[length - 64];
-            if (length >= 64) {
-                System.arraycopy(bites, 0, temp, 0, length - 64);
-            }
-            final String hashHex = generateHash256Value(temp, sessionKeyBytes);
-            final IsoValue<String> field128update = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) hashHex, 64);
-            msg.setField(128, (IsoValue) field128update);
-            System.out.println("Message was hashed " + msg.getObjectValue(128));
-            msgtosend= msg.writeData();
-
+            msgtosend = generateField128(msg, sessionKeyBytes);
         }else {
-            final byte[] bites = msg.writeData();
-            final int length = bites.length;
-            final byte[] temp = new byte[length - 64];
-            if (length >= 64) {
-                System.arraycopy(bites, 0, temp, 0, length - 64);
-            }
-            final String hashHex = generateHash256Value(temp, sessionKeyBytes);
-            final IsoValue<String> field128update = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) hashHex, 64);
-            msg.setField(128, (IsoValue) field128update);
-            System.out.println("Message was hashed " + msg.getObjectValue(128));
-            msgtosend= msg.writeData();
+            msgtosend = generateField128(msg, sessionKeyBytes);
         }
         return msgtosend;
-
     }
 
-//    private byte[] translatePin(byte[] resp, String profile) throws IOException, CryptoException {
-//        IsoMessage msg = toISo(resp);
-//        terminalKeyManagement terminalKeyManagement = terminalKeysRepo.findByTerminalID(msg.getObjectValue(41));
-//        encryptedSessionKey = terminalKeyManagement.getSessionKey();
-//        encryptedMasterKey = terminalKeyManagement.getMasterKey();
-//        OfflineCTMK offlineCTMK= new OfflineCTMK();
-//        offlineCTMK.setComponentOne("386758793DE364F88319EA0D4C7091EF");
-//        offlineCTMK.setComponentTwo("67A78CB3D9C1FE38C1DAB6F154D634D6");
-//        String ctmkString = ISOUtil.hexor(offlineCTMK.getComponentOne(), offlineCTMK.getComponentTwo());
-//        byte[] ctmk = StringUtils.hexStringToByteArray(ctmkString);
-//        final byte[] encryptedBytes = com.jayrush.springmvcrest.Nibss.utils.StringUtils.hexStringToByteArray(encryptedMasterKey);
-//        final byte[] clearTMKBytes;
-//        try {
-//            this.clearMasterKey = com.jayrush.springmvcrest.Nibss.utils.CryptoUtil.decrypt(encryptedBytes, ctmk, "DESede", "DESede/ECB/NoPadding");
-//        } catch (InvalidKeyException | InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException | InvalidKeySpecException | NoSuchPaddingException | NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        }
-//        byte[] sessionKeyBytes = StringUtils.hexStringToByteArray(encryptedSessionKey);
-//        try {
-//            this.clearSessionKey = CryptoUtil.decrypt(sessionKeyBytes, clearMasterKey, "DESede", "DESede/ECB/NoPadding");
-//        } catch (InvalidKeyException | BadPaddingException | IllegalBlockSizeException | InvalidKeySpecException | NoSuchPaddingException | InvalidAlgorithmParameterException | NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        }
-//        String pinblock = msg.getObjectValue(52);
-//        if (Objects.nonNull(pinblock)) {
-//            //decrypt pinblock using static keys shared with terminals
-//            String tmsKey = "28300518865986737073478883921518";
-//            String newPinblock = nibssToIswInterface.decryptPinBlock(pinblock, tmsKey);
-//            if (profile.equals("ISW")) {
-//                String iswkey = "11111111111111111111111111111111";//isw static key
-//                String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock, iswkey);
-//                final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) iswPinblock.toUpperCase(), 16);
-//
-//                msg.setField(52, (IsoValue) field52);
-//
-//            } else {
-//                //get nibss pinkey for terminalID
-//                String nibssPinBlock = nibssToIswInterface.encryptPinBlock(newPinblock, terminalKeyManagement.getPinKey());
-//                final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) nibssPinBlock.toUpperCase(), 16);
-//                msg.setField(52, (IsoValue) field52);
-//            }
-//            final byte[] bites = msg.writeData();
-//            final int length = bites.length;
-//            final byte[] temp = new byte[length - 64];
-//            if (length >= 64) {
-//                System.arraycopy(bites, 0, temp, 0, length - 64);
-//            }
-//            final String hashHex = generateHash256Value(temp, terminalKeyManagement.getSessionKey().getBytes());
-//            final IsoValue<String> field128update = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) hashHex, 64);
-//            msg.setField(128, (IsoValue) field128update);
-//            System.out.println("Message was hashed " + msg.getObjectValue(128));
-//            IsoMessage message = toISo(msg.writeData());
-//
-//        }
-//        return msg.writeData();
-//    }
+    private byte[] generateField128(IsoMessage msg, byte[] sessionKeyBytes) {
+        byte[] msgtosend;
+        final byte[] bites = msg.writeData();
+        final int length = bites.length;
+        final byte[] temp = new byte[length - 64];
+        if (length >= 64) {
+            System.arraycopy(bites, 0, temp, 0, length - 64);
+        }
+        final String hashHex = generateHash256Value(temp, sessionKeyBytes);
+        final IsoValue<String> field128update = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) hashHex, 64);
+        msg.setField(128, (IsoValue) field128update);
+        logger.info("Hashed Message = {}", msg.getObjectValue(128).toString());
+        msgtosend = msg.writeData();
+        return msgtosend;
+    }
 
-    private void nibssProfile(byte[] resp, host host, TerminalTransactions request) throws IOException, CryptoException {
+
+    private void nibssProfile(byte[] resp, host host, TerminalTransactions request) throws IOException {
         byte[] receivedResponse = sendTransactionToProcess(resp, host, request);
         assert receivedResponse != null;
         dos.write(receivedResponse);
@@ -302,6 +246,8 @@ public class ClientHandler extends Thread {
         fepMessage = processor.toFEP(resp);
         byte[] receivedResponse = sendTransactionToProcess(fepMessage, host, request);
         assert receivedResponse != null;
+
+
         dos.write(receivedResponse);
         dos.flush();
         logger.info("************Response Sent*********");
@@ -328,7 +274,6 @@ public class ClientHandler extends Thread {
     }
 
     private byte[] sendTransactionToProcess(byte[] messagePayload, host host, TerminalTransactions request) {
-        ISO8583TransactionResponse response = null;
         ChannelSocketRequestManager socketRequester = null;
         TerminalTransactions transactions = new TerminalTransactions();
         Response responseObject = new Response();
@@ -340,18 +285,27 @@ public class ClientHandler extends Thread {
         try {
             //Host Connection connection
             logger.info("Host details {}", host);
+            logger.info("Checking if Global settings is set ");
+
+
+//            globalSettings globalSettings = globalSettingsRepo.findById(Long.valueOf(1)).get();
+//            if (Objects.nonNull(globalSettings)&& globalSettings.equals(true)){//use ISW
+//                host.setHostName("ISW");
+//                host.setHostIp("10.2.2.65");
+//                host.setHostPort(7001);
+//            }
+
             socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
 
             //send transaction to Processor
-            if (host.getHostPort() == 7002) {
+            if (host.getHostName().equals("ISW")) {
                 responseObject = socketRequester.toISW(messagePayload, host);
-            } else {
+            }
+            else {
                 responseObject = socketRequester.toNIBSS(messagePayload);
             }
 
-
             modelMapper.map(responseObject.getResponseMsg(), transactions);
-
             //save transaction response to db if response was gotten
             transaction(transactions);
 
@@ -366,12 +320,12 @@ public class ClientHandler extends Thread {
                 transaction.setStatus("Failed");
                 transactionRepository.save(transaction);
             }
-            logger.info("Failed to get Transaction response due to IO exception ", e);
-            logger.info("Request Timed Out ", e);
+            logger.info("Error ", e);
             return null;
-        } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException | ParseException | ISOException e) {
+        } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException| ParseException | ISOException e) {
             logger.info(e.toString());
             return null;
+
         } finally {
             if (socketRequester != null) {
                 try {
@@ -387,12 +341,9 @@ public class ClientHandler extends Thread {
         if (transactions.getAmount() != null) {
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
             String date = simpleDateFormat.format(new Date());
-            SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
-            String date1 = simpleDateFormat1.format(new Date());
             transactions.setDateCreated(date);
+
             //to update the transaction status after response is gotten from host
-
-
             TerminalTransactions transactionRequest = transactionRepository.findByrrnAndTerminalID(transactions.getRrn(), transactions.getTerminalID());
             if (Objects.nonNull(transactionRequest)) {
                 transactionRequest.setResponseCode(transactions.getResponseCode());
@@ -415,121 +366,6 @@ public class ClientHandler extends Thread {
             }
         }
     }
-
-//    public void getKeysForAllTerminalID(){
-//        List<Terminals> terminalsList = terminalRepository.findAll();
-//        for(int i = 0; i<terminalsList.size(); i++){
-//            keyManagement(terminalsList.get(i).getTerminalID());
-//            logger.info("Keys downloaded for Terminal {}",terminalsList.get(i).getTerminalID());
-//        }
-//    }
-//
-//    public void keyManagement(String terminalID) {
-//        Terminals terminals = terminalRepository.findByterminalID(terminalID);
-//        host host = new host();
-//        if (Objects.nonNull(terminals)){
-//            host.setHostIp(terminals.getProfile().getProfileIP());
-//            host.setHostPort(terminals.getProfile().getPort());
-//        }
-//        DataStore dataStore1 = new DataStore() {
-//            @Override
-//            public void putString(String p0, String p1) {
-//
-//            }
-//
-//            @Override
-//            public void putInt(String p0, int p1) {
-//
-//            }
-//
-//            @Override
-//            public String getString(String p0) {
-//                return null;
-//            }
-//
-//            @Override
-//            public int getInt(String p0) {
-//                return 0;
-//            }
-//        };
-//        dataStore1.putString(ThamesStoreKeys.THAMES_STRING_CONFIG_COMMUNICATION_HOST_ID, host.getHostIp());
-//        dataStore1.putString(ThamesStoreKeys.THAMES_STRING_CONFIG_COMMUNICATION_PORT_DETAILS,String.valueOf(host.getHostPort()));
-//
-//        NibssRequestsFactory factory = new NibssRequestsFactory(dataStore1, terminalID,terminalKeysRepo);
-//        OfflineCTMK offlineCTMK = new OfflineCTMK();
-//        //switch based on profile name
-//        switch (terminals.getProfile().getProfileName()){
-//            case "POSVAS":
-//                //best convention is to get the zpk from the terminal profile
-//
-//                offlineCTMK.setComponentOne("386758793DE364F88319EA0D4C7091EF");
-//                offlineCTMK.setComponentTwo("67A78CB3D9C1FE38C1DAB6F154D634D6");
-//                try {
-//                    getKeys_Params(factory, offlineCTMK,host);
-//
-//                } catch (Exception ex) {
-//                    logger.info("Failed to fetch all keys ",ex);
-//
-//                }
-//                break;
-//
-//            case "EPMS":
-//                offlineCTMK.setComponentOne("3BB9648A624F32C17C4037C81AD0B5CB");
-//                offlineCTMK.setComponentTwo("6491A2BFEC1AD668F7CBFEC4CE1301AD");
-//                try {
-//                    getKeys_Params(factory, offlineCTMK,host);
-//
-//                } catch (Exception ex) {
-//                    logger.info("Failed to fetch all keys ",ex);
-//
-//                }
-//                break;
-//            case "ISW":
-//                offlineCTMK.setComponentOne("10101010101010101010101010101010");
-//                offlineCTMK.setComponentTwo("01010101010101010101010101010101");
-//                //make route for interswitch
-//                break;
-//            default:
-//                logger.info("No ZPK exists for profile");
-//                break;
-//        }
-//
-//
-//
-//
-//
-//    }
-//
-//    private static void getKeys_Params(NibssRequestsFactory factory, OfflineCTMK offlineCTMK, host host) {
-//        if (!factory.getMasterKey(offlineCTMK,host)) {
-//            logger.info("Failed to download Master Key");
-//        }
-//
-//        logger.info("Master Key Downloaded");
-//
-//        if (!factory.getSessionKey(host)) {
-//            logger.info("Failed to download Session Key");
-//
-//        }
-//
-//        if (!factory.getPinKey(host)) {
-//            logger.info("Failed to download Pin Key");
-//
-//        }
-//
-//        if (!factory.getParameters(host)) {
-//            logger.info("Failed to download Parameters");
-//        }
-//    }
-
-//    public void getKeysForAllTerminalID( List<Terminals> terminalsList){
-//
-//        for (int i = 0; i<terminalsList.size(); i++){
-//            terminalKeyManagement terminalKeys = keyManagement(terminalsList.get(i));
-//            terminalKeysRepo.save(terminalKeys);
-//        }
-//
-//    }
 
     public terminalKeyManagement keyManagement(Terminals terminals) {
         host host = new host();
@@ -602,12 +438,12 @@ public class ClientHandler extends Thread {
                 }
                 break;
             case "ISW":
-
-                terminalKeys.setParameterDownloaded("static parameters");
-                terminalKeys.setMasterKey("static parameters");
-                terminalKeys.setSessionKey("static parameters");
-                terminalKeys.setPinKey("11111111111111111111111111111111");
+                terminalKeys.setId(terminals.getId());
                 terminalKeys.setTerminalID(terminals.getTerminalID());
+                terminalKeys.setMasterKey("Static");
+                terminalKeys.setSessionKey("Static");
+                terminalKeys.setPinKey("11111111111111111111111111111111");
+                terminalKeys.setParameterDownloaded("Static");
                 return terminalKeys;
 
             default:
@@ -639,25 +475,6 @@ public class ClientHandler extends Thread {
         return keys;
 
 
-//        if (!factory.getMasterKey(offlineCTMK,host)) {
-//            logger.info("Failed to download Master Key");
-//        }
-//
-//        logger.info("Master Key Downloaded");
-
-//        if (!factory.getSessionKey(host)) {
-//            logger.info("Failed to download Session Key");
-//
-//        }
-
-//        if (!factory.getPinKey(host)) {
-//            logger.info("Failed to download Pin Key");
-//
-//        }
-//
-//        if (!factory.getParameters(host)) {
-//            logger.info("Failed to download Parameters");
-//        }
     }
 
     private static String hexToAscii(String hexStr) {
@@ -730,7 +547,6 @@ public class ClientHandler extends Thread {
     }
 
     private IsoMessage toISo(final byte[] message) throws IOException {
-        final TerminalTransactions response = new TerminalTransactions();
         final IsoMessage isoMessage = null;
         final MessageFactory<IsoMessage> responseMessageFactory = (MessageFactory<IsoMessage>) new MessageFactory();
         responseMessageFactory.addMessageTemplate(isoMessage);
@@ -742,7 +558,6 @@ public class ClientHandler extends Thread {
         responseMessageFactory.setConfigPath(IsoProcessor.CONFIG_FILE);
         try {
             IsoMessage responseMessage = responseMessageFactory.parseMessage(message, 0);
-//            response.setTerminalID(responseMessage.getObjectValue(41).toString());
             printIsoFields(responseMessage, "ISO message ====> ");
             return responseMessage;
         } catch (Exception e2) {
@@ -752,109 +567,4 @@ public class ClientHandler extends Thread {
     }
 
 }
-//@EnableScheduling
-//@Component
-//class newclass{
-//    @Autowired
-//    TerminalRepository terminalRepository;
-//    @Autowired
-//    terminalKeysRepo terminalKeysRepo;
-//    private static Logger logger = LoggerFactory.getLogger(newclass.class);
-//
-//    @Scheduled(fixedDelay = 1000)
-//    public void keyManagement() {
-//        String terminalID = "2101CX82";
-//        Terminals terminals = terminalRepository.findByterminalID(terminalID);
-//        host host = new host();
-//        if (Objects.nonNull(terminals)){
-//            host.setHostIp(terminals.getProfile().getProfileIP());
-//            host.setHostPort(terminals.getProfile().getPort());
-//        }
-//        DataStore dataStore1 = new DataStore() {
-//            @Override
-//            public void putString(String p0, String p1) {
-//
-//            }
-//
-//            @Override
-//            public void putInt(String p0, int p1) {
-//
-//            }
-//
-//            @Override
-//            public String getString(String p0) {
-//                return null;
-//            }
-//
-//            @Override
-//            public int getInt(String p0) {
-//                return 0;
-//            }
-//        };
-//        dataStore1.putString(ThamesStoreKeys.THAMES_STRING_CONFIG_COMMUNICATION_HOST_ID, host.getHostIp());
-//        dataStore1.putString(ThamesStoreKeys.THAMES_STRING_CONFIG_COMMUNICATION_PORT_DETAILS,String.valueOf(host.getHostPort()));
-//
-//        NibssRequestsFactory factory = new NibssRequestsFactory(dataStore1, terminalID,terminalKeysRepo);
-//        OfflineCTMK offlineCTMK = new OfflineCTMK();
-//        //switch based on profile name
-//        switch (terminals.getProfile().getProfileName()){
-//            case "POSVAS":
-//                //best convention is to get the zpk from the terminal profile
-//                offlineCTMK.setComponentOne("3BB9648A624F32C17C4037C81AD0B5CB");
-//                offlineCTMK.setComponentTwo("6491A2BFEC1AD668F7CBFEC4CE1301AD");
-//                try {
-//                    getKeys_Params(factory, offlineCTMK,host);
-//
-//                } catch (Exception ex) {
-//                    logger.info("Failed to fetch all keys ",ex);
-//
-//                }
-//                break;
-//            case "EPMS":
-//                offlineCTMK.setComponentOne("3BB9648A62s4F3217C4037C81AD0B5CB");
-//                offlineCTMK.setComponentTwo("6491A2BFEdC1AD68F7CBFEC4CE1301AD");
-//                try {
-//                    getKeys_Params(factory, offlineCTMK,host);
-//
-//                } catch (Exception ex) {
-//                    logger.info("Failed to fetch all keys ",ex);
-//
-//                }
-//                break;
-//            case "ISW":
-//                offlineCTMK.setComponentOne("3BB9648A624F32C1C4037C81AD0B5CB");
-//                offlineCTMK.setComponentTwo("6491A2BFEC1AD68F7CBFEC4CE1301AD");
-//                //make route for interswitch
-//                break;
-//            default:
-//                logger.info("No ZPK exists for profile");
-//                break;
-//        }
-//
-//
-//
-//
-//
-//    }
-//    private static void getKeys_Params(NibssRequestsFactory factory, OfflineCTMK offlineCTMK, host host) {
-//        if (!factory.getMasterKey(offlineCTMK,host)) {
-//            logger.info("Failed to download Master Key");
-//        }
-//
-//        logger.info("Master Key Downloaded");
-//
-//        if (!factory.getSessionKey(host)) {
-//            logger.info("Failed to download Session Key");
-//
-//        }
-//
-//        if (!factory.getPinKey(host)) {
-//            logger.info("Failed to download Pin Key");
-//
-//        }
-//
-//        if (!factory.getParameters(host)) {
-//            logger.info("Failed to download Parameters");
-//        }
-//    }
-//}
+

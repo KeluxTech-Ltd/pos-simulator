@@ -55,6 +55,7 @@
         <field num="60" type="LLLVAR"/>
         <field num="102" type="LLVAR"/>
         <field num="123" type="LLLVAR"/>
+        <field num="124" type="LLLLVAR"/>
         <field num="128" type="ALPHA" length="64"/>
     </parse>
 

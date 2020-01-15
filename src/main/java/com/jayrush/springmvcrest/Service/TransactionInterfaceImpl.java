@@ -128,13 +128,13 @@ public class TransactionInterfaceImpl implements TransactionInterface {
     @Override
     public List<topFiveInstitutionDTO> getTopFiveInstitutions() {
         List<topFiveInstitutionDTO> topFiveInstitutionDTOS = new ArrayList<>();
-        List<List<String>> listListn  = transactionRepository.findTopfiveInstitution();
-
-        for (int i=0; i<listListn.size();i++){
-            topFiveInstitutionDTO dto = new topFiveInstitutionDTO();
-            dto.setInstitutionID(listListn.get(i));
-            topFiveInstitutionDTOS.add(i,dto);
-        }
+//        List<List<String>> listListn  = transactionRepository.findTopfiveInstitution();
+//
+//        for (int i=0; i<listListn.size();i++){
+//            topFiveInstitutionDTO dto = new topFiveInstitutionDTO();
+//            dto.setInstitutionID(listListn.get(i));
+//            topFiveInstitutionDTOS.add(i,dto);
+//        }
         return topFiveInstitutionDTOS;
     }
 
@@ -155,16 +155,11 @@ public class TransactionInterfaceImpl implements TransactionInterface {
         BigDecimal totalAmount = new BigDecimal(0);
 
         for(int i = 0; i<transactions.size();i++){
-//            int decimalPlaces = 2;
-//            amount = amount.setScale(decimalPlaces, BigDecimal.ROUND_DOWN);
-//            amount=new BigDecimal(transactions.get(i).getAmount());
-//            amount = amount.add(new BigDecimal(String.valueOf(amount)));
             String value = transactions.get(i).getAmount();
             amount = new BigDecimal(value);
 
 
             totalAmount = totalAmount.add(amount2.add(amount));
-            amount = null;
         }
 
 

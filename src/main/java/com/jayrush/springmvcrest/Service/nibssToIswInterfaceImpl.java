@@ -18,8 +18,8 @@ import org.springframework.util.StringUtils;
 public class nibssToIswInterfaceImpl implements nibssToIswInterface {
     @Value("${tms.key}")
     private String tmsKey = "467F5EA176C84FECEC1CF8CE26314654";
-    @Value("${switch.key}")
-    private String switchExchangeKey = "467F5EA176C84FECEC1CF8CE26314654";
+//    @Value("${switch.key}")
+    private String switchExchangeKey = "D15397C2CECD23B8DF5FE430920E55D6";
     private static final Logger logger = LoggerFactory.getLogger(nibssToIswInterfaceImpl.class);
 
 
@@ -51,6 +51,28 @@ public class nibssToIswInterfaceImpl implements nibssToIswInterface {
             throw new CryptoException("Could not decode hex key", e);
         }
     }
+
+    /*public String encryptPinBlock(String pinBlock) throws CryptoException {
+        logger.info("The pin block bytes {} ", pinBlock);
+        if (StringUtils.isEmpty(pinBlock)) {
+            return pinBlock;
+        }
+        byte[] clearPinBlockBytes;
+        byte[] zpk;
+        try {
+            clearPinBlockBytes = Hex.decodeHex(pinBlock.toCharArray());
+            logger.info("The clear pin block bytes {} ", clearPinBlockBytes);
+            zpk = Hex.decodeHex(switchExchangeKey.toCharArray());
+            logger.info("The clear zpk {} ", switchExchangeKey.toCharArray());
+        } catch (DecoderException e) {
+            throw new CryptoException("Could not decode pin block for Threeline", e);
+        }
+
+        byte[] encryptedPinBlockBytes = EncryptionUtil.tdesEncryptECB(clearPinBlockBytes, zpk);
+
+        return new String(Hex.encodeHex(encryptedPinBlockBytes));
+
+    }*/
 
     public String encryptPinBlock(String pinBlock) throws CryptoException {
         logger.info("The pin block bytes {} ", pinBlock);

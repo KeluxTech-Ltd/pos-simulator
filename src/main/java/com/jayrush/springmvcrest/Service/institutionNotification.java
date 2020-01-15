@@ -121,33 +121,6 @@ public class institutionNotification {
 
 
 
-
-//    //todo generate ctmk, pinkey, masterkey, encrypted master/pinkey
-//    public static void main(String []args) throws CryptoException {
-//        nibssToIswInterface nibssToIswInterface = new nibssToIswInterfaceImpl();
-//        String ctmk = "26225551015548232507011317342780";
-//        String ClearMasterkey = "27869791275814834349579874090163";
-//
-//        System.out.println("Clear masterKey is = "+ClearMasterkey);
-//        String encryptedMasterkey = nibssToIswInterface.encryptPinBlock(ClearMasterkey,ctmk);
-//        System.out.println("Encrypted masterkey = "+encryptedMasterkey);
-//
-//
-//        String decryptedMasterKey = nibssToIswInterface.decryptPinBlock(encryptedMasterkey,ctmk);
-//        System.out.println("Clear masterkey is = "+decryptedMasterKey);
-//
-//        String pinkey = randomNumber(32);
-//        System.out.println("The Generated pinkey is = "+pinkey);
-//        String EncryptedPinKey = nibssToIswInterface.encryptPinBlock(pinkey,ClearMasterkey);
-//        System.out.println("Encrypted PinKey is = "+EncryptedPinKey);
-//
-//        String DecryptedPinKey = nibssToIswInterface.decryptPinBlock(EncryptedPinKey,ClearMasterkey);
-//        System.out.println("The decrypted pinKey is "+DecryptedPinKey);
-//
-//
-//
-//
-//    }
 }
 
 
