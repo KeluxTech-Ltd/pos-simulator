@@ -12,9 +12,18 @@ import javax.persistence.Id;
  */
 
 @Entity
+@Data
 public class globalSettings {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)//Generates the ID for us
     private Long id;
     private boolean Settings = false;
+
+    public boolean isSettings() {
+        return Settings;
+    }
+
+    public void setSettings(boolean settings) {
+        Settings = settings;
+    }
 }

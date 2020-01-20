@@ -27,6 +27,7 @@ import java.util.Date;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
 import static com.jayrush.springmvcrest.utility.MainConverter.hexify;
+import static com.jayrush.springmvcrest.utility.Utils.maskPanForReceipt;
 
 /**
  * @author JoshuaO
@@ -113,7 +114,13 @@ public class ISWprocessor {
             logger.info("Interswitch ISO request");
             for (int j = 0;j<isoMsg.getMaxField(); j++){
                 if (isoMsg.hasField(j)){
-                    logger.info("<field {}> = {}",j,isoMsg.getString(j));
+                    if (j==2){
+                        String pan = maskPanForReceipt(isoMsg.getString(j));
+                        logger.info("<field {}> = {}",j,pan);
+                    }else {
+                        logger.info("<field {}> = {}",j,isoMsg.getString(j));
+                    }
+
                 }
             }
 
@@ -166,7 +173,12 @@ public class ISWprocessor {
         logger.info("Response From Int2Switch");
         for (int i = 0; i<iswResponse.getMaxField(); i++){
             if (iswResponse.hasField(i)){
-                logger.info("Field {} = {}", i, iswResponse.getString(i));
+                if (i==2){
+                    String pan = maskPanForReceipt(iswResponse.getString(i));
+                    logger.info("<field {}> = {}",i,pan);
+                }else {
+                    logger.info("<field {}> = {}",i,iswResponse.getString(i));
+                }
             }
         }
         final IsoMessage isoMessage = new IsoMessage();

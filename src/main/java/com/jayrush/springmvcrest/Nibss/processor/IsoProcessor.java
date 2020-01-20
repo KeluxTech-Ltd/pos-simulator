@@ -24,6 +24,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import static com.jayrush.springmvcrest.Nibss.utils.DataUtil.bytesToHex;
+import static com.jayrush.springmvcrest.utility.Utils.maskPanForReceipt;
 
 //import com.solab.iso8583.*;
 
@@ -875,8 +876,12 @@ public class IsoProcessor
         logger.info(type);
         for (int index = 1; index <= 128; ++index) {
             if (isoMessage.hasField(index)) {
-
-                logger.info("field {} : {}" , index , isoMessage.getAt(index).getValue());
+                if (index == 2){
+                    String pan = maskPanForReceipt(isoMessage.getAt(index).getValue().toString());
+                    logger.info("<field {}> = {}",index,pan);
+                }else {
+                    logger.info("field {} : {}" , index , isoMessage.getAt(index).getValue());
+                }
             }
         }
     }

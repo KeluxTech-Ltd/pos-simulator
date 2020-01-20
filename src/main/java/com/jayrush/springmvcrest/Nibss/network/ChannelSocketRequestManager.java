@@ -174,7 +174,6 @@ public class ChannelSocketRequestManager
                     logger.info("Connection not connected");
                 }
                 else {
-                    ISWprocessor isWprocessor = new ISWprocessor();
                     socketconn.getOutputStream().write(Message);
                     final byte[] lenBytes = new byte[2];
                     socketconn.getInputStream().read(lenBytes);

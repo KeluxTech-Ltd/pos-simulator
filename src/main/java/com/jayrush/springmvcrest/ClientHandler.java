@@ -3,7 +3,6 @@ package com.jayrush.springmvcrest;
 import com.globasure.nibss.tms.client.lib.utils.StringUtils;
 import com.jayrush.springmvcrest.Nibss.factory.NibssRequestsFactory;
 import com.jayrush.springmvcrest.Nibss.models.store.OfflineCTMK;
-import com.jayrush.springmvcrest.Nibss.models.transaction.ISO8583TransactionResponse;
 import com.jayrush.springmvcrest.Nibss.network.ChannelSocketRequestManager;
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
 import com.jayrush.springmvcrest.Nibss.repository.DataStore;
@@ -28,7 +27,10 @@ import com.jayrush.springmvcrest.iso8583.IsoType;
 import com.jayrush.springmvcrest.iso8583.IsoValue;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
 import com.jayrush.springmvcrest.utility.CryptoException;
+import com.jayrush.springmvcrest.utility.EncryptionUtil;
 import com.jayrush.springmvcrest.utility.Utils;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.jpos.iso.ISOException;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -37,11 +39,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
+import java.net.*;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -50,6 +51,7 @@ import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Objects;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.generateHash256Value;
@@ -99,10 +101,12 @@ public class ClientHandler extends Thread {
 
     }
 
-
     @Override
     public void run() {
         try {
+            //check global settings
+            boolean globalSettingsON = isGlobalSettingsON();
+
             logger.info("AWaiting data------------------------------------------");
             final byte[] lenBytes = new byte[2];
             dis.readFully(lenBytes);
@@ -110,10 +114,10 @@ public class ClientHandler extends Thread {
             final byte[] resp = new byte[contentLength];
             dis.readFully(resp);
 
-
             //log the request message
             String messagesent = hexify(resp);
             String mti = logMessageType(messagesent);
+
             host host = new host();
 
             //to log the request message
@@ -125,7 +129,6 @@ public class ClientHandler extends Thread {
             }
 
             //getting the profile setting to route transaction based on set profile for terminal ID
-
             String profile = terminals.getProfile().getProfileName();
             host.setHostName(terminals.getProfile().getProfileName());
             host.setHostIp(terminals.getProfile().getProfileIP());
@@ -149,18 +152,28 @@ public class ClientHandler extends Thread {
                     if (mti.equals("0200")) {
                         //decrypt pin block
                         byte[] translatedMsg = translatePin(resp, profile);
-                        interswitchProfile(translatedMsg, host, request);
-                    } else {
-                        interswitchProfile(resp, host, request);
+                        interswitchProfile(translatedMsg, host, request, globalSettingsON);
+                    }
+//                    else if (mti.equals("0800")){
+//                        logger.info("Sign on Echo Message");
+//                        SignOnResponse(resp);
+//                    }
+                    else {
+                        interswitchProfile(resp, host, request,globalSettingsON);
                     }
                     break;
                 case "POSVAS":
                 case "EPMS":
                     if (mti.equals("0200")) {
                             byte[] translatedMsg = translatePin(resp, profile);
-                            nibssProfile(translatedMsg, host, request);
-                    } else {
-                        nibssProfile(resp, host, request);
+                            nibssProfile(translatedMsg, host, request,globalSettingsON);
+                    }
+//                    else if (mti.equals("0800")){
+//                        logger.info("Sign on Echo Message");
+//                        SignOnResponse(resp);
+//                    }
+                    else {
+                        nibssProfile(resp, host, request,globalSettingsON);
                     }
                     break;
                 default:
@@ -179,6 +192,15 @@ public class ClientHandler extends Thread {
         }
     }
 
+    private boolean isGlobalSettingsON() {
+        boolean globalSettingsON = false;
+        globalSettings globalSettings = globalSettingsRepo.findById(Long.valueOf(1)).get();
+        if (Objects.nonNull(globalSettings)&& globalSettings.equals(true)){//use ISW
+            globalSettingsON = true;
+        }
+        return globalSettingsON;
+    }
+
     private byte[] translatePin(byte[] resp, String profile) throws IOException, CryptoException {
         IsoMessage msg = toISo(resp);
         terminalKeyManagement terminalKeyManagement = terminalKeysRepo.findByTerminalID(msg.getObjectValue(41));
@@ -189,21 +211,19 @@ public class ClientHandler extends Thread {
         String tmsKey = "28300518865986737073478883921518";//tmsKey for decrypting all request message pinblock
         String iswkey = "D15397C2CECD23B8DF5FE430920E55D6";//isw static key to encrypt interswitch request pinblock
 
+
         if (Objects.nonNull(pinblock)) {
             //decrypt pinblock using static keys shared with terminals
             String newPinblock = nibssToIswInterface.decryptPinBlock(pinblock, tmsKey);
-            System.out.println("The Clear Pinblock = "+newPinblock);
+
             if (profile.equals("ISW")) {
                 String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock, iswkey);
-//                String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock);
-                System.out.println("Encrypted Pinblock to send is :: "+iswPinblock);
                 final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) iswPinblock.toUpperCase(), 16);
                 msg.setField(52, (IsoValue) field52);
 
             } else {
                 //get nibss pinkey for terminalID
                 String nibssPinBlock = nibssToIswInterface.encryptPinBlock(newPinblock, terminalKeyManagement.getPinKey());
-                System.out.println("Encrypted Pinblock to send is :: "+nibssPinBlock);
                 final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) nibssPinBlock.toUpperCase(), 16);
                 msg.setField(52, (IsoValue) field52);
             }
@@ -231,8 +251,16 @@ public class ClientHandler extends Thread {
     }
 
 
-    private void nibssProfile(byte[] resp, host host, TerminalTransactions request) throws IOException {
-        byte[] receivedResponse = sendTransactionToProcess(resp, host, request);
+    private void nibssProfile(byte[] resp, host host, TerminalTransactions request, boolean globalSettings) throws IOException {
+        byte[] receivedResponse = sendTransactionToProcess(resp, host, request, globalSettings);
+        assert receivedResponse != null;
+        dos.write(receivedResponse);
+        dos.flush();
+        logger.info("************Response Sent*********");
+        dos.close();
+    }
+    private void SignOnResponse(byte[] resp) throws IOException {
+        byte[] receivedResponse = null;
         assert receivedResponse != null;
         dos.write(receivedResponse);
         dos.flush();
@@ -240,11 +268,11 @@ public class ClientHandler extends Thread {
         dos.close();
     }
 
-    private void interswitchProfile(byte[] resp, host host, TerminalTransactions request) throws IOException, ParseException, RequestProcessingException, ISOException {
+    private void interswitchProfile(byte[] resp, host host, TerminalTransactions request, boolean globalSettings) throws IOException, ParseException, RequestProcessingException, ISOException {
         byte[] fepMessage;
         ISWprocessor processor = new ISWprocessor();
         fepMessage = processor.toFEP(resp);
-        byte[] receivedResponse = sendTransactionToProcess(fepMessage, host, request);
+        byte[] receivedResponse = sendTransactionToProcess(fepMessage, host, request,globalSettings);
         assert receivedResponse != null;
 
 
@@ -273,7 +301,7 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private byte[] sendTransactionToProcess(byte[] messagePayload, host host, TerminalTransactions request) {
+    private byte[] sendTransactionToProcess(byte[] messagePayload, host host, TerminalTransactions request, boolean globalSettings) {
         ChannelSocketRequestManager socketRequester = null;
         TerminalTransactions transactions = new TerminalTransactions();
         Response responseObject = new Response();
@@ -287,15 +315,16 @@ public class ClientHandler extends Thread {
             logger.info("Host details {}", host);
             logger.info("Checking if Global settings is set ");
 
+            if (Objects.equals(globalSettings,false)){
+                socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
+            }
+            else {
+                host.setHostPort(7001);
+                host.setHostIp("10.2.2.65");
+                host.setHostName("ISW");
+                socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
+            }
 
-//            globalSettings globalSettings = globalSettingsRepo.findById(Long.valueOf(1)).get();
-//            if (Objects.nonNull(globalSettings)&& globalSettings.equals(true)){//use ISW
-//                host.setHostName("ISW");
-//                host.setHostIp("10.2.2.65");
-//                host.setHostPort(7001);
-//            }
-
-            socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
 
             //send transaction to Processor
             if (host.getHostName().equals("ISW")) {
@@ -400,6 +429,8 @@ public class ClientHandler extends Thread {
         NibssRequestsFactory factory = new NibssRequestsFactory(dataStore1, terminals.getTerminalID(), terminalKeysRepo);
         terminalKeyManagement terminalKeys = new terminalKeyManagement();
         OfflineCTMK offlineCTMK = new OfflineCTMK();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        String date = simpleDateFormat.format(new Date());
         //switch based on profile name
         switch (terminals.getProfile().getProfileName()) {
             case "POSVAS":
@@ -414,6 +445,7 @@ public class ClientHandler extends Thread {
                     terminalKeys.setSessionKey(keys.getSessionKey());
                     terminalKeys.setPinKey(keys.getPinKey());
                     terminalKeys.setParameterDownloaded(keys.getParameters());
+                    terminalKeys.setLastExchangeDateTime(date);
                     return terminalKeys;
                 } catch (Exception ex) {
                     logger.info("Failed to fetch all keys ", ex);
@@ -431,6 +463,7 @@ public class ClientHandler extends Thread {
                     terminalKeys.setSessionKey(keys.getSessionKey());
                     terminalKeys.setPinKey(keys.getPinKey());
                     terminalKeys.setParameterDownloaded(keys.getParameters());
+                    terminalKeys.setLastExchangeDateTime(date);
                     return terminalKeys;
                 } catch (Exception ex) {
                     logger.info("Failed to fetch all keys ", ex);
@@ -440,10 +473,11 @@ public class ClientHandler extends Thread {
             case "ISW":
                 terminalKeys.setId(terminals.getId());
                 terminalKeys.setTerminalID(terminals.getTerminalID());
-                terminalKeys.setMasterKey("Static");
+                terminalKeys.setMasterKey("27869791275814834349579874090163");
                 terminalKeys.setSessionKey("Static");
-                terminalKeys.setPinKey("11111111111111111111111111111111");
+                terminalKeys.setPinKey("28300518865986737073478883921518");
                 terminalKeys.setParameterDownloaded("Static");
+                terminalKeys.setLastExchangeDateTime(date);
                 return terminalKeys;
 
             default:
@@ -454,7 +488,6 @@ public class ClientHandler extends Thread {
         return terminalKeys;
 
     }
-
 
     private keys getKeys_Params(NibssRequestsFactory factory, OfflineCTMK offlineCTMK, host host) {
         keys keys = new keys();
@@ -558,7 +591,6 @@ public class ClientHandler extends Thread {
         responseMessageFactory.setConfigPath(IsoProcessor.CONFIG_FILE);
         try {
             IsoMessage responseMessage = responseMessageFactory.parseMessage(message, 0);
-            printIsoFields(responseMessage, "ISO message ====> ");
             return responseMessage;
         } catch (Exception e2) {
             logger.info(e2.getMessage());

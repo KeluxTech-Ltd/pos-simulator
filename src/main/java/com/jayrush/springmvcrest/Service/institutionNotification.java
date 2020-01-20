@@ -9,12 +9,11 @@ import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.hostResponse;
 import com.jayrush.springmvcrest.domain.terminalKeyManagement;
-import com.jayrush.springmvcrest.utility.CryptoException;
+import com.jayrush.springmvcrest.freedom.MedusaNotification;
 import org.apache.commons.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -33,9 +31,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
 
-import static com.jayrush.springmvcrest.freedom.freedomSync.SyncTrans;
-import static com.jayrush.springmvcrest.utility.AppUtility.randomNumber;
-import static com.jayrush.springmvcrest.utility.AppUtility.randomString;
+//import static com.jayrush.springmvcrest.freedom.freedomSync.SyncTrans;
+
 
 /**
  * @author JoshuaO
@@ -58,6 +55,9 @@ public class institutionNotification {
     @Autowired
     terminalKeysRepo terminalKeysRepo;
 
+    @Autowired
+    MedusaNotification freedomSync;
+
 //    @Scheduled(fixedDelay = 20000)
     @Transactional
     public void notifyInstitution(){
@@ -71,7 +71,9 @@ public class institutionNotification {
         else {
             for (TerminalTransactions transaction : transactions) {
                 try {
-                    response = SyncTrans(transaction);
+//                    response = SyncTrans(transaction);
+
+                    response = freedomSync.NotifyInstitution(transaction);
                 } catch (IOException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException | DecoderException e) {
                     logger.info(e.getMessage());
                 }
@@ -96,9 +98,7 @@ public class institutionNotification {
                 }
                 transactionLog.setResponseFromFreedom(response);
                 transactionRepository.save(transactionLog);
-                logger.info("transaction successfully sent {}",transactionLog);
-
-
+                logger.info("transaction notification sent successfully {}",transactionLog);
             }
         }
     }

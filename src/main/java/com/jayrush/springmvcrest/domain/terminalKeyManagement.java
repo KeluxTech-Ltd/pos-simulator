@@ -21,4 +21,5 @@ public class terminalKeyManagement {
     private String sessionKey;
     private String pinKey;
     private String parameterDownloaded;
+    private String lastExchangeDateTime;
 }

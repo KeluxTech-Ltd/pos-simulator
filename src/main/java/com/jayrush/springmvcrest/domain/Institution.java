@@ -28,6 +28,9 @@ public class Institution {
 
     private boolean saved = false;
     private String savedDescription;
+    private String institutionURL;
+    private String institutionAppKey;
+    private String institutionIntegrationVersion;
 
 
 
