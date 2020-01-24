@@ -93,7 +93,7 @@ public final class emvUtil {
 
     }
 
-    private static Map<String, String> extractKeyValuePairs(String emvString) throws EmvProcessingException {
+    public static Map<String, String> extractKeyValuePairs(String emvString) throws EmvProcessingException {
         int fieldIndex = 0;
         Map<String, String> emvPairs = new HashMap<>();
         while (fieldIndex < emvString.length()) {

@@ -10,6 +10,7 @@ import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.hostResponse;
 import com.jayrush.springmvcrest.domain.terminalKeyManagement;
 import com.jayrush.springmvcrest.freedom.MedusaNotification;
+import com.jayrush.springmvcrest.utility.DateFormatter;
 import org.apache.commons.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Objects;
 
@@ -58,7 +60,7 @@ public class institutionNotification {
     @Autowired
     MedusaNotification freedomSync;
 
-//    @Scheduled(fixedDelay = 20000)
+    @Scheduled(fixedDelay = 20000)
     @Transactional
     public void notifyInstitution(){
         logger.info("Starting transaction notification to Institution");
@@ -97,13 +99,17 @@ public class institutionNotification {
                     transactionLog.setProcessed(false);
                 }
                 transactionLog.setResponseFromFreedom(response);
-                transactionRepository.save(transactionLog);
+                try {
+                    transactionRepository.save(transactionLog);
+                } catch (Exception e) {
+                    logger.info(e.getMessage());
+                }
                 logger.info("transaction notification sent successfully {}",transactionLog);
             }
         }
     }
 
-//    @Scheduled(fixedDelay = 86400000)
+    @Scheduled(fixedDelay = 86400000)
     public void start(){
 
         Socket s = null;
@@ -119,6 +125,21 @@ public class institutionNotification {
 
     }
 
+    //todo push getkeys per terminalID
+//    public void getKeysforTerminalID(String terminalID){
+//
+//        Socket s = null;
+//        DataInputStream dis = null;
+//        DataOutputStream dos = null;
+//        ClientHandler clientHandler = new ClientHandler(s, dis,dos);
+//        Terminals terminal = termina.findAll();
+//        for (int i = 0; i<terminalsList.size(); i++){
+//            terminalKeyManagement key = clientHandler.keyManagement(terminalsList.get(i));
+//            key.setId(terminalsList.get(i).getId());
+//            terminalKeysRepo.save(key);
+//        }
+//
+//    }
 
 
 }

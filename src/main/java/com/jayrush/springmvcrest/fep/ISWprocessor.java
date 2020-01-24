@@ -11,6 +11,7 @@ import com.jayrush.springmvcrest.iso8583.IsoValue;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
 import com.jayrush.springmvcrest.utility.CryptoException;
 import com.jayrush.springmvcrest.utility.emvUtil;
+import org.apache.poi.util.StringUtil;
 import org.jpos.iso.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +25,13 @@ import java.io.PrintStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
+import static com.jayrush.springmvcrest.Nibss.utils.DataUtil.parseTLV;
 import static com.jayrush.springmvcrest.utility.MainConverter.hexify;
 import static com.jayrush.springmvcrest.utility.Utils.maskPanForReceipt;
+import static com.jayrush.springmvcrest.utility.emvUtil.extractKeyValuePairs;
 
 /**
  * @author JoshuaO
@@ -96,17 +100,21 @@ public class ISWprocessor {
                 isoMsg.unset(60);
                 isoMsg.unset(128);
                 isoMsg.set(15,ISODate.getDate(now));
+                isoMsg.set(18,"6010");
                 isoMsg.set(33,"013622");
-//                isoMsg.unset(55);
-                isoMsg.set(98, "3096646498|WDL|45:45:10:5");//identifying the payee (recipient) of a payment transaction //can be dummy data
-                isoMsg.set(100, "628008");//A code identifying the financial institution that should receive a request or advice
-                isoMsg.set(103, "1360876053");//When used in payment transactions, this field specifies the bank account number of the payee
-                isoMsg.set(111, "42VWY37");//custom
+                isoMsg.set(98, "6600002751|WDL|45:45:10:5");//identifying the payee (recipient) of a payment transaction //can be dummy data
+                isoMsg.set(100, "639138");//A code identifying the financial institution that should receive a request or advice
+                isoMsg.set(103, "6600002751");//When used in payment transactions, this field specifies the bank account number of the payee
+//                isoMsg.set(111, "42VWY37");//custom
                 isoMsg.set(113, "");//custom
                 isoMsg.set("127.0", "");
-                isoMsg.set("127.2", "0200:001006:1106173347:940753992");//switch key : The switch key field uniquely identifies a transaction.
+                isoMsg.set("127.2", "0200:000663:0124165012:067250612");//switch key : The switch key field uniquely identifies a transaction.
                 isoMsg.set("127.3", "FCMBLmpSrc  FCMBFinSnk  180316180316FCMBGroup   ");//routing info
                 isoMsg.set("127.13", "000000 566       ");//pos geographic data
+                isoMsg.set("127.33", "6007");//pos geographic data
+                isoMsg.set(55,field55Generator(isoMsg, responseMessage));
+
+
 //                isoMsg.set("127.25", emvUtil.emvStringToXmlString(responseMessage.getObjectValue(55).toString()));
                 isoMsg.set("127.33", "6007");//Extended transaction type
             }
@@ -124,7 +132,7 @@ public class ISWprocessor {
                 }
             }
 
-        } catch (ISOException /*| EmvProcessingException*/ e) {
+        } catch (ISOException | EmvProcessingException /*| EmvProcessingException*/ e) {
             throw new RequestProcessingException("Could not set request mti", e);
         }
 
@@ -137,6 +145,20 @@ public class ISWprocessor {
             throw new RequestProcessingException("Could not pack iso message", e);
         }
         return prependLenBytes(message);
+    }
+
+    private String field55Generator(ISOMsg isoMsg, IsoMessage responseMessage) throws EmvProcessingException {
+        Map<String, String> field55 = extractKeyValuePairs(responseMessage.getObjectValue(55).toString());
+//                String tlvAmount = field55.get("9F02");
+        String tlvAmount = field55.get("9F02");
+        String OriginalField55 = isoMsg.getString(55);
+//        isoMsg.unset(55);
+        //check the padding value
+        byte[]byteAmount = ISOUtil.hex2byte(tlvAmount);
+        String HexAmount = amountToHexHelper(byteAmount).toUpperCase();
+        String NewField55 = org.apache.commons.lang3.StringUtils.replacePattern(OriginalField55,"9F0206"+"[a-z,0-9,A-Z]*"+"9F03","9F0206"
+                +HexAmount+"9F03");
+        return NewField55;
     }
 
     private static String toAscii(String hexStr) {
@@ -158,6 +180,10 @@ public class ISWprocessor {
         newBytes[1] = (byte) (len & 255);
         System.arraycopy(data, 0, newBytes, 2, len);
         return newBytes;
+    }
+
+    private static String amountToHexHelper(byte[] amount) {
+        return StringUtils.padLeft(Long.toHexString(Long.parseLong(ISOUtil.hexString(amount))), 12, '0');
     }
 
     public byte[]toPOS(byte[]fromISW) throws IOException, ParseException, RequestProcessingException{
@@ -236,6 +262,7 @@ public class ISWprocessor {
         return isoMessage.writeData();
 
     }
+
     public String padLeftZeros(String inputString, int length) {
         if (inputString.length() >= length) {
             return inputString;

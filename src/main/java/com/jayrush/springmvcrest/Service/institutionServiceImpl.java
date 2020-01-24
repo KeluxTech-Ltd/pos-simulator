@@ -67,8 +67,11 @@ public class institutionServiceImpl implements institutionservice {
         institution1.setCreatedBy(institution.getCreatedBy());
         institution1.setBank(institution.getBank());
         institution1.setServiceProviders(providers);
+        institution1.setInstitutionAppKey(institution.getInstitutionAppKey());
+        institution1.setInstitutionURL(institution.getInstitutionURL());
+        institution1.setInstitutionIntegrationVersion(institution.getInstitutionIntegrationVersion());
 
-        Institution institution2 = institutionRepository.findByinstitutionName(institution.getInstitutionName());
+        Institution institution2 = institutionRepository.findByinstitutionNameAndInstitutionEmail(institution.getInstitutionName(),institution.getInstitutionEmail());
 
         if (Objects.nonNull(institution2)){
             institution1.setSaved(false);

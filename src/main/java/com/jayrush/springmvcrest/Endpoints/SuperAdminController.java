@@ -1,10 +1,12 @@
 package com.jayrush.springmvcrest.Endpoints;
 
+import com.jayrush.springmvcrest.Repositories.globalSettingsRepo;
 import com.jayrush.springmvcrest.Service.superAdminLoginService;
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.DeleteUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
+import com.jayrush.springmvcrest.domain.globalSettings;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import com.jayrush.springmvcrest.slf4j.Logger;
 import com.jayrush.springmvcrest.slf4j.LoggerFactory;
@@ -23,6 +25,9 @@ public class SuperAdminController {
 
     @Autowired
     superAdminLoginService superAdminLoginService;
+
+    @Autowired
+    globalSettingsRepo  globalSettingsRepo;
 
     @PostMapping("/login")
     public ResponseEntity<?> SuperAdminlogin (@RequestBody LoginDTO request)
@@ -195,6 +200,32 @@ public class SuperAdminController {
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("success");
+            response.setRespBody(null);
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        }
+
+    }
+    @GetMapping("/globalSettings")
+    public ResponseEntity<?> globalSettings(boolean request){
+        try {
+            Response response = new Response();
+            response.setRespCode("00");
+            response.setRespDescription("success");
+            globalSettings globalSettings = globalSettingsRepo.getOne(1L);
+            globalSettings.setSettings(request);
+            if (request){
+                response.setRespBody("Global settings ON");
+            }
+            else {
+                response.setRespBody("Global settings OFF");
+            }
+            globalSettingsRepo.save(globalSettings);
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        } catch (Exception e) {
+            logger.info(e.getMessage());
+            Response response = new Response();
+            response.setRespCode("96");
+            response.setRespDescription("Failed");
             response.setRespBody(null);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }

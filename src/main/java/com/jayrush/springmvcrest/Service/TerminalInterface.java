@@ -13,6 +13,7 @@ import java.util.List;
 
 public interface TerminalInterface {
     List<Terminals> getAllTerminals();
+    List<Terminals> getTerminalsbyInstitution(String InstitutionID);
     Terminals getTerminalByID(Long id);
     Terminals RegisterTerminal(TerminalsDTO terminals);
     Terminals EditTerminal(Terminals terminals);

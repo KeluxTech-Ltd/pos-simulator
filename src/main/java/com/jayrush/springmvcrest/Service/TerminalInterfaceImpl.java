@@ -55,6 +55,11 @@ public class TerminalInterfaceImpl implements TerminalInterface {
     }
 
     @Override
+    public List<Terminals> getTerminalsbyInstitution(String institutionID) {
+        return terminalRepository.findByInstitution_InstitutionID(institutionID);
+    }
+
+    @Override
     public Terminals getTerminalByID(Long id) {
         return terminalRepository.findById(id).get();
     }

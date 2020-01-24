@@ -3,6 +3,7 @@ package com.jayrush.springmvcrest.domain;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Entity
 @Data

@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class tmsLoginServicesImpl implements tmsLoginServices {
@@ -74,11 +76,20 @@ public class tmsLoginServicesImpl implements tmsLoginServices {
     public Response CreateInstitutionUser(tmsUser User) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         String date = simpleDateFormat.format(new Date());
-        String body = "TMS User Details"+"\n\n\n\n" +
-                "username: "+User.getUsername()+"\n\n\n"
-                +"Password: "+User.getPassword();
+        Map<String, Object> params = new HashMap<>();
+        params.put("institutionName", User.getInstitution().getInstitutionName());
+        params.put("institutionEmail", User.getInstitution().getInstitutionEmail());
+        params.put("institutionID", User.getInstitution().getInstitutionID());
+        params.put("institutionPassword", User.getPassword());
+
         User.setPassword(passwordEncoder.encode(User.getPassword()));
-//        mailService.sendMail(User.getEmail(),body);
+
+        try {
+            mailService.sendMail("Institution User Creation",User.getEmail(),null,params,"user_template",User.getInstitution().getInstitutionID());
+        } catch (Exception e) {
+            logger.info(e.getMessage());
+        }
+
         User.setDatecreated(date);
         tmsUser user = userRepository.save(User);
         Response response = new Response();

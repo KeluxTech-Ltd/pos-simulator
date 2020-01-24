@@ -1,11 +1,11 @@
 package com.jayrush.springmvcrest.Endpoints;
 
 import com.jayrush.springmvcrest.Repositories.UserRepository;
-import com.jayrush.springmvcrest.Service.TransactionInterface;
-import com.jayrush.springmvcrest.Service.tmsInstitutionService;
-import com.jayrush.springmvcrest.Service.tmsLoginServices;
+import com.jayrush.springmvcrest.Service.*;
 import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
+import com.jayrush.springmvcrest.domain.Terminals;
+import com.jayrush.springmvcrest.domain.domainDTO.InstitutionUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import com.jayrush.springmvcrest.domain.domainDTO.institutionTranRequestDTO;
@@ -19,6 +19,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Objects;
+
+import static com.jayrush.springmvcrest.domain.roleType.InstitutionAdmin;
+import static com.jayrush.springmvcrest.domain.roleType.SuperAdmin;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/v1")
@@ -39,7 +43,11 @@ public class InstitutionLoginController {
     JwtTokenUtil jwtTokenUtil;
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    UserService userService;
 
+    @Autowired
+    TerminalInterface terminalInterface;
     private static final Logger logger = LoggerFactory.getLogger(InstitutionLoginController.class);
     private static final String SUCCESS  = "Success";
     private static final String FAILED  = "Failed";
@@ -66,8 +74,20 @@ public class InstitutionLoginController {
     {
         try
         {
-            Response response = tmsLoginService.CreateInstitutionUser(request);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            String username = jwtTokenUtil.getUsernameFromToken(request.getToken());
+            tmsUser User = userRepository.findByusername(username);
+            if (User.getRole().equals(SuperAdmin)||User.getRole().equals(InstitutionAdmin))
+            {
+                Response response = tmsLoginService.CreateInstitutionUser(request);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
+            else{
+                Response response = new Response();
+                response.setRespCode(FAILED_CODE);
+                response.setRespDescription("User not Admin/SuperAdmin");
+                response.setRespBody(null);
+                return new ResponseEntity<>(response, HttpStatus.OK);
+            }
 
         } catch (Exception e) {
             logger.info(e.getMessage());
@@ -98,6 +118,55 @@ public class InstitutionLoginController {
             }
 
 
+        } catch (Exception e) {
+            logger.info(e.getMessage());
+            return null;
+        }
+    }
+    @PostMapping("/InstitutionUserList")
+    public ResponseEntity<?>GetInstitutionUsers(@RequestBody InstitutionUser user){
+        try {
+            Response response = new Response();
+            String username = jwtTokenUtil.getUsernameFromToken(user.getToken());
+            logger.info("Username from auth token is {}",username);
+            tmsUser institutionID = userRepository.findByusername(username);
+            List<tmsUser> User = userService.getInstitutionUsers(institutionID.getInstitution().getInstitutionID());
+            if (Objects.nonNull(User)){
+                response.setRespBody(User);
+                response.setRespDescription(SUCCESS);
+                response.setRespCode(SUCCESS_CODE);
+            }
+            else {
+                response.setRespCode(FAILED_CODE);
+                response.setRespDescription(FAILED);
+                response.setRespBody(null);
+            }
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        } catch (Exception e) {
+            logger.info(e.getMessage());
+            return null;
+        }
+    }
+
+    @PostMapping("/InstitutionTerminalList")
+    public ResponseEntity<?>GetInstitutionTerminals(@RequestBody InstitutionUser user){
+        try{
+            Response response = new Response();
+            String username = jwtTokenUtil.getUsernameFromToken(user.getToken());
+            logger.info("Username from auth token is {}",username);
+            tmsUser institutionID = userRepository.findByusername(username);
+            List<Terminals> terminals = terminalInterface.getTerminalsbyInstitution(institutionID.getInstitution().getInstitutionID());
+            if (Objects.nonNull(terminals)){
+                response.setRespBody(terminals);
+                response.setRespDescription(SUCCESS);
+                response.setRespCode(SUCCESS_CODE);
+            }
+            else {
+                response.setRespCode(FAILED_CODE);
+                response.setRespDescription(FAILED);
+                response.setRespBody(null);
+            }
+            return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
             logger.info(e.getMessage());
             return null;

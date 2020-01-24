@@ -18,7 +18,7 @@ public class TransactionService {
     public TerminalTransactions saveTransactionstoDb(TerminalTransactions terminalTransactions) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         String date = simpleDateFormat.format(new Date());
-        terminalTransactions.setDateCreated(date);
+//        terminalTransactions.setDateCreated(date);
 
         return transactionRepository.save(terminalTransactions);
 

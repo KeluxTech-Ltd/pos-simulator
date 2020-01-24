@@ -52,6 +52,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Objects;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.generateHash256Value;
@@ -194,8 +195,9 @@ public class ClientHandler extends Thread {
 
     private boolean isGlobalSettingsON() {
         boolean globalSettingsON = false;
-        globalSettings globalSettings = globalSettingsRepo.findById(Long.valueOf(1)).get();
-        if (Objects.nonNull(globalSettings)&& globalSettings.equals(true)){//use ISW
+//        globalSettings globalSettings = globalSettingsRepo.findById(Long.valueOf(1)).get();
+        List<globalSettings> globalSettings = globalSettingsRepo.findAll();
+        if (Objects.nonNull(globalSettings)&& globalSettings.get(0).isSettings()){//use ISW
             globalSettingsON = true;
         }
         return globalSettingsON;
@@ -209,12 +211,14 @@ public class ClientHandler extends Thread {
         byte[] msgtosend;
         String pinblock = msg.getObjectValue(52);
         String tmsKey = "28300518865986737073478883921518";//tmsKey for decrypting all request message pinblock
-        String iswkey = "D15397C2CECD23B8DF5FE430920E55D6";//isw static key to encrypt interswitch request pinblock
+        String iswkey = "0B1C5669004F5303E40846D738FC7353";//isw static key to encrypt interswitch request pinblock
+//        String iswkey = "D15397C2CECD23B8DF5FE430920E55D6";//isw static key to encrypt interswitch request pinblock
 
 
         if (Objects.nonNull(pinblock)) {
             //decrypt pinblock using static keys shared with terminals
             String newPinblock = nibssToIswInterface.decryptPinBlock(pinblock, tmsKey);
+            logger.info("Clear pinblock = {}",newPinblock);
 
             if (profile.equals("ISW")) {
                 String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock, iswkey);

@@ -40,33 +40,37 @@ public interface TransactionRepository extends JpaRepository<TerminalTransaction
     List<TerminalTransactions> findTopfiveInstitution();
 
 
-    @Query(value = "select count(distinct  terminalid) from transaction_logs \n" +
+    @Query(value = "select count(distinct  terminalid) from dbo.transaction_logs \n" +
             "where date_created between ?1 and  ?2",nativeQuery = true)
     List<List<String>> findActiveTerminals(String from, String to);
 
     List<TerminalTransactions> findByInstitutionIDAndDateCreatedBetween(String institutionID, String from, String to);
 
-    @Query(value = "SELECT *\n" +
-            "FROM transaction_logs\n" +
-            "ORDER BY id DESC \n" +
-            "limit 10", nativeQuery = true)
+//    @Query(value = "SELECT *\n" +
+//            "FROM transaction_logs\n" +
+//            "ORDER BY id DESC \n" +
+//            "limit 10", nativeQuery = true)
+    @Query(value = "SELECT TOP 10 t.* FROM dbo.transaction_logs t", nativeQuery = true)
     List<TerminalTransactions> getRecentTransactions();
 
     //total successful monthly traansactions(Month)
-    @Query(value = "SELECT * FROM transaction_logs WHERE date_created <= (NOW() - INTERVAL 1 MONTH)\n" +
-            "and status = 'Success'", nativeQuery = true)
-    List<TerminalTransactions> getSuccessfulTransactions();
+//    @Query(value = "SELECT * FROM transaction_logs WHERE date_created <= (NOW() - INTERVAL 1 MONTH)\n" +
+//            "and status = 'Success'", nativeQuery = true)
+//    List<TerminalTransactions> getSuccessfulTransactions();
+    List<TerminalTransactions>findByStatusAndDateCreatedBetween(String status, String from, String to);
 
     //total failed transactions(1 month)
-    @Query(value = "SELECT * FROM transaction_logs WHERE date_created <= (NOW() - INTERVAL 1 MONTH)\n" +
-            "and status = 'Failed'", nativeQuery = true)
-    List<TerminalTransactions> getFailedTransactions();
-
-    @Query(value = "Select sum(transaction_logs.amount) \n" +
-            "from transaction_logs\n" +
-            "where status = 'success'\n" +
-            "and date_created <=(NOW() - INTERVAL 1 MONTH)", nativeQuery = true)
-    Double transactionAmount();
+//    @Query(value = "SELECT * FROM transaction_logs WHERE date_created <= (NOW() - INTERVAL 1 MONTH)\n" +
+//            "and status = 'Failed'", nativeQuery = true)
+//    List<TerminalTransactions> getFailedTransactions();
+//
+//    @Query(value = "Select sum(transaction_logs.amount) \n" +
+//            "from transaction_logs\n" +
+//            "where status = 'success'\n" +
+//            "and date_created <=(NOW() - INTERVAL 1 MONTH)", nativeQuery = true)
+    @Query(value = "select sum(CAST(amount AS FLOAT)) from transaction_logs where status = 'success'\n" +
+            "and date_created between ?1 and ?2", nativeQuery = true)
+    Double transactionAmount(String from, String to);
 
 
 

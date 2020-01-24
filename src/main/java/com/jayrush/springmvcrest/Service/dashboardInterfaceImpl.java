@@ -35,9 +35,22 @@ public class dashboardInterfaceImpl implements dashboardInterface {
         cal.add(Calendar.DATE, -1);
         return cal.getTime();
     }
+    private Date month() {
+        final Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -30);
+        return cal.getTime();
+    }
     private String getYesterdayDateString() {
         DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
         return dateFormat.format(yesterday());
+    }
+    private String getlastmonthDateString() {
+        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+        return dateFormat.format(month());
+    }
+    private String getlastmonthDateString2() {
+        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        return dateFormat.format(month());
     }
 
     @Override
@@ -74,21 +87,26 @@ public class dashboardInterfaceImpl implements dashboardInterface {
 
         dashboardUtils.setActiveInactiveTerminals(activeInactive);
 
+
         //total Successful in the month
-        List<TerminalTransactions> successfulTransactions = transactionRepository.getSuccessfulTransactions();
+        String lastmonth = getlastmonthDateString();
+        List<TerminalTransactions> successfulTransactions = transactionRepository.findByStatusAndDateCreatedBetween("Success",today,lastmonth);
         dashboardUtils.setSuccess(successfulTransactions.size());
 
         //failed transactions in the month
-        List<TerminalTransactions> failedTransactions = transactionRepository.getFailedTransactions();
+        List<TerminalTransactions> failedTransactions = transactionRepository.findByStatusAndDateCreatedBetween("Failed",today,lastmonth);
         dashboardUtils.setFailed(failedTransactions.size());
 
         //total transactions in the month
         dashboardUtils.setTotalTransactions(successfulTransactions.size()+failedTransactions.size());
 
         //successful Amount in the month
-        Double successfulAmount = transactionRepository.transactionAmount();
+        SimpleDateFormat simpleDateFormat2 = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        String now = simpleDateFormat2.format(new Date());
+
+        String lastmonthDate = getlastmonthDateString2();
+        Double successfulAmount = transactionRepository.transactionAmount(lastmonth,now);
         dashboardUtils.setTotalSuccessfulAmount(successfulAmount);
         return dashboardUtils;
     }
-
 }

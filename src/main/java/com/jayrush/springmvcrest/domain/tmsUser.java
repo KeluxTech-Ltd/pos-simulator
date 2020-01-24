@@ -21,7 +21,7 @@ public class tmsUser {
 
     private String datecreated;
 
-    @JsonIgnore
+//    @JsonIgnore
     private String username;
 
     private String password;
@@ -33,4 +33,6 @@ public class tmsUser {
     private roleType role;
     @JsonIgnore
     private boolean changePassword;
+
+    private String token;
 }

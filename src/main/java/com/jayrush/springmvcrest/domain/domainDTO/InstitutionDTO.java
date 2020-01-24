@@ -17,4 +17,7 @@ public class InstitutionDTO {
     private String dateCreated;
     private String serviceProviderName;
     private String bank;
+    private String institutionURL;
+    private String institutionAppKey;
+    private String institutionIntegrationVersion;
 }

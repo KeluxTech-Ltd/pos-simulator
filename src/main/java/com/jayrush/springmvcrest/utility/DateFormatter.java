@@ -10,7 +10,8 @@ import java.util.Date;
 
 public class DateFormatter {
 
-    static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+//    static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+    static SimpleDateFormat dateFormatter = new SimpleDateFormat("dd-MM-yyyy'T'HH:mm:ss");
     static SimpleDateFormat dateFormat=new SimpleDateFormat("yyyy-MM-dd");
     static SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     static SimpleDateFormat dateField7 = new SimpleDateFormat("MMddHHmmss");
@@ -19,12 +20,16 @@ public class DateFormatter {
     static SimpleDateFormat timeStamp = new SimpleDateFormat("yyyyMMddhhmmssSS");
     static SimpleDateFormat interDate = new SimpleDateFormat("dd MMM yyyy");
 
-
+    public Date setDateCreated() throws ParseException {
+        SimpleDateFormat interDate1 = new SimpleDateFormat("dd MMM yyyy");
+        String date4 = interDate1.format(new Date());
+        return interDate1.parse(date4);
+    }
     Logger logger = LoggerFactory.getLogger(this.getClass());
 
     public static String date(Date date){
 
-        return dateFormat.format(date);
+        return dateFormatter.format(date);
     }
 
     public static String requestID(Date date){

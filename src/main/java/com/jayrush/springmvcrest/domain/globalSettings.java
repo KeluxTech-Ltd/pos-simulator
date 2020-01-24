@@ -17,7 +17,7 @@ public class globalSettings {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)//Generates the ID for us
     private Long id;
-    private boolean Settings = false;
+    private boolean Settings;
 
     public boolean isSettings() {
         return Settings;

@@ -203,9 +203,6 @@ public class MedusaNotification {
                 pushWithdrawalPTSPRequest.setReversal(false);
             }
         pushWithdrawalPTSPRequest.setStan(transactionRecords.getStan());
-
-
-
         pushWithdrawalPTSPRequest.setTransactionType("3Line");
         pushWithdrawalPTSPRequest.setProductId("3LINE001");
         pushWithdrawalPTSPRequest.setTransactionTime(transactionRecords.getRequestDateTime());
@@ -233,7 +230,7 @@ public class MedusaNotification {
                 .post(body)
                 .build();
 
-            //Create a new call object with POST method
+        //Create a new call object with POST method
         OkHttpClient client = new OkHttpClient();
         Call call = client.newCall(request);
         okhttp3.Response response = null;
@@ -272,6 +269,11 @@ public class MedusaNotification {
         count++;
         return respBody;
     }
-
+    public static void main(String[]args) throws DecoderException {
+        String appkey = "b697772320da7258386eb3b002833d13";
+        byte[]key = Hex.decodeHex(appkey.toCharArray());
+        System.out.println(key);
+    }
 
 }
+
