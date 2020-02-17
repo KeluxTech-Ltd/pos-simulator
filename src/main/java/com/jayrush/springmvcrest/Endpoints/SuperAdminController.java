@@ -81,6 +81,7 @@ public class SuperAdminController {
             Response response = new Response();
             response.setRespCode("96");
             response.setRespDescription("Failed");
+            response.setRespBody("User Already Exists");
             return new ResponseEntity<>(response,HttpStatus.OK);
         }
     }
@@ -205,7 +206,7 @@ public class SuperAdminController {
         }
 
     }
-    @GetMapping("/globalSettings")
+    @PostMapping("/globalSettings")
     public ResponseEntity<?> globalSettings(boolean request){
         try {
             Response response = new Response();
@@ -231,6 +232,28 @@ public class SuperAdminController {
         }
 
     }
+
+    @GetMapping("/getSetting")
+    public ResponseEntity<?> getGlobalSettings(){
+        try {
+            Response response = new Response();
+            response.setRespCode("00");
+            response.setRespDescription("success");
+            globalSettings globalSettings = globalSettingsRepo.getOne(1L);
+            boolean value = globalSettings.isSettings();
+            response.setRespBody(value);
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        } catch (Exception e) {
+            logger.info(e.getMessage());
+            Response response = new Response();
+            response.setRespCode("96");
+            response.setRespDescription("Failed");
+            response.setRespBody(null);
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        }
+
+    }
+
 
     @RequestMapping(
             value = "/**",

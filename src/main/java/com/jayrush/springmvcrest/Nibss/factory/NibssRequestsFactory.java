@@ -16,15 +16,10 @@ import com.jayrush.springmvcrest.Nibss.utils.ParameterParser;
 import com.jayrush.springmvcrest.Nibss.utils.StringUtils;
 import com.jayrush.springmvcrest.Repositories.terminalKeysRepo;
 import com.jayrush.springmvcrest.domain.domainDTO.host;
-import com.jayrush.springmvcrest.domain.terminalKeyManagement;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
-import java.util.Objects;
-//import org.slf4j.Logger;
 
 public class NibssRequestsFactory
 {
@@ -44,7 +39,7 @@ public class NibssRequestsFactory
         this.terminalKeysRepo = terminalKeysRepo;
     }
     
-    public String getMasterKey(final OfflineCTMK offlineCTMKManager, final host host) {
+    public String getMasterKey(final host host, String ctmkString) {
         try {
 //            terminalKeyManagement terminalKeyManagement = terminalKeysRepo.findByTerminalID(this.terminalId);
 //            if (Objects.isNull(terminalKeyManagement)){
@@ -65,7 +60,7 @@ public class NibssRequestsFactory
             System.out.println(rk.toString());
             final GetMasterKeyResponse rep = IsoProcessor.process(rk);
             this.dataStore.putString(Globals.PREF_TMK_ENC, rep.getEncryptedMasterKey());
-            final String ctmkString = ISOUtil.hexor(offlineCTMKManager.getComponentOne(), offlineCTMKManager.getComponentTwo());
+//            final String ctmkString = ISOUtil.hexor(offlineCTMKManager.getComponentOne(), offlineCTMKManager.getComponentTwo());
             final byte[] ctmk = StringUtils.hexStringToByteArray(ctmkString);
             rep.decryptMasterKey(ctmk);
             //this holds the clear masterKey

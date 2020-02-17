@@ -34,4 +34,5 @@ public class TerminalTransactions {
     private String responseDateTime;
     private String institutionResponseCode;
     private String institutionResponseDesc;
+    private String processedBy;
 }

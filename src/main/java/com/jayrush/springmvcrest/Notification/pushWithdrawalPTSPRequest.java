@@ -1,9 +1,7 @@
-package com.jayrush.springmvcrest.freedom;
+package com.jayrush.springmvcrest.Notification;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;
-
-import java.util.Objects;
 
 /**
  * @author JoshuaO

@@ -83,7 +83,7 @@ public class TransactionInterfaceImpl implements TransactionInterface {
 
         TransactionListDTO transactionListDTO = new TransactionListDTO();
         List<TerminalTransactions> historyRespDTOS;
-        List<TerminalTransactions> total = fetchTransactions();
+//        List<TerminalTransactions> total = fetchTransactions();
         Page<TerminalTransactions> pagedTransactions;
         Pageable paged;
 
@@ -106,10 +106,12 @@ public class TransactionInterfaceImpl implements TransactionInterface {
             Date fromDate = DateUtil.dateFullFormat(transactionHistoryReq.getFromDate());
             Date toDate = DateUtil.dateFullFormat(transactionHistoryReq.getToDate());
             toDate = DateUtils.addDays(toDate,1);
-            pagedTransactions = transactionRepository.findByinstitutionIDAndDateCreatedBetween(transactionHistoryReq.getInstitutionID(),fromDate,toDate,paged);
+            String from = fromDate.toString();
+            String to = toDate.toString();
+            pagedTransactions = transactionRepository.findTopByinstitutionIDAndDateTimeBetween(transactionHistoryReq.getInstitutionID(),from,to,paged);
         }
         else {
-            pagedTransactions = transactionRepository.findByinstitutionID(transactionHistoryReq.getInstitutionID(),paged);
+            pagedTransactions = transactionRepository.findTopByinstitutionID(transactionHistoryReq.getInstitutionID(),paged);
         }
         historyRespDTOS = pagedTransactions.getContent();
         if (pagedTransactions!=null && pagedTransactions.getContent().size()>0){

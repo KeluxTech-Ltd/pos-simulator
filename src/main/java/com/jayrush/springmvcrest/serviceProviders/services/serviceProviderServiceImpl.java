@@ -83,7 +83,6 @@ public class serviceProviderServiceImpl implements serviceProviderService {
         profiles1.setProfileName(profiles.getProfileName());
         profiles1.setZpk(profiles.getZpk());
 
-
         int index = profilesList.size();
 
         profilesList.add(index,profiles1);

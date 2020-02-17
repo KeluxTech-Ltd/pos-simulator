@@ -10,6 +10,8 @@ import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import com.jayrush.springmvcrest.domain.domainDTO.institutionTranRequestDTO;
 import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
+import com.jayrush.springmvcrest.rolesPermissions.models.Permissions;
+import com.jayrush.springmvcrest.rolesPermissions.repositories.permissionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,6 +49,8 @@ public class InstitutionLoginController {
     UserRepository userRepository;
     @Autowired
     UserService userService;
+    @Autowired
+    permissionRepository permissionRepository;
 
     @Autowired
     TerminalInterface terminalInterface;
@@ -54,9 +60,8 @@ public class InstitutionLoginController {
     private static final String SUCCESS_CODE  = "00";
     private static final String FAILED_CODE  = "96";
 
-
     @PostMapping("/login")
-    public ResponseEntity<?> login (@RequestBody  LoginDTO request)
+    public ResponseEntity<?> login(@RequestBody  LoginDTO request)
     {
         try
         {
@@ -68,18 +73,25 @@ public class InstitutionLoginController {
             return null;
         }
     }
-
     @PostMapping("/CreateInstitutionUser")
-    public ResponseEntity<?> create(@RequestBody tmsUser request)
+    public ResponseEntity<?> create (@RequestBody tmsUser request)
     {
         try
         {
             String username = jwtTokenUtil.getUsernameFromToken(request.getToken());
             tmsUser User = userRepository.findByusername(username);
-            if (User.getRole().equals(SuperAdmin)||User.getRole().equals(InstitutionAdmin))
-            {
-                Response response = tmsLoginService.CreateInstitutionUser(request);
+            Permissions permissions = permissionRepository.findByName("CREATE_USER");
+
+            if (Objects.nonNull(User)){
+                Response response = new Response();
+
+                if (User.getRole().getPermissions().contains(permissions)){
+                    request.setInstitution(User.getInstitution());
+                    response = tmsLoginService.CreateInstitutionUser(request);
+
+                }
                 return new ResponseEntity<>(response, HttpStatus.OK);
+
             }
             else{
                 Response response = new Response();
@@ -94,7 +106,6 @@ public class InstitutionLoginController {
             return null;
         }
     }
-
     @PostMapping("/InstitutionTransactions")
     public ResponseEntity<?> institutionsTransactionHistory(@RequestBody institutionTranRequestDTO request){
         try {
@@ -123,6 +134,7 @@ public class InstitutionLoginController {
             return null;
         }
     }
+
     @PostMapping("/InstitutionUserList")
     public ResponseEntity<?>GetInstitutionUsers(@RequestBody InstitutionUser user){
         try {
@@ -172,7 +184,6 @@ public class InstitutionLoginController {
             return null;
         }
     }
-
 
     @RequestMapping(
             value = "/**",

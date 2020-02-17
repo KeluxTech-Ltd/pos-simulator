@@ -16,10 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class superAdminLoginServiceImpl implements superAdminLoginService {
@@ -43,13 +40,13 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
             if(!passwordEncoder.matches(loginDTO.getPassword(),User.getPassword())){
                 throw new tmsExceptions("Invalid User Password");
             }
-            tmsUserDTO UserDTO = new tmsUserDTO();
+
             String token = jwtTokenUtil.generateToken(User.getUsername());
-            UserDTO.setAuthToken(token);
-            UserDTO.setInstitution(null);
+            User.setToken(token);
+            User.setInstitution(null);
             response.setRespCode("00");
             response.setRespDescription("Success");
-            response.setRespBody(UserDTO);
+            response.setRespBody(User);
             return response;
         }else{
             throw new tmsExceptions("Invalid User Name");
@@ -85,22 +82,25 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
     public tmsUser superAdminCreateUsers(tmsUser tmsUser) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         String date = simpleDateFormat.format(new Date());
-        tmsUser.setUsername(tmsUser.getEmail());
 
+        tmsUser user = userRepository.findByFirstnameAndEmail(tmsUser.getFirstname(),tmsUser.getEmail());
+        if (Objects.isNull(user)){
+            tmsUser.setUsername(tmsUser.getEmail());
 
-        Map<String, Object> params = new HashMap<>();
-        params.put("institutionName", tmsUser.getInstitution().getInstitutionName());
-        params.put("username", tmsUser.getEmail());
-        params.put("password", tmsUser.getPassword());
-//        mailService.SendMail(tmsUser.getEmail(),body);
-        tmsUser.setDatecreated(date);
-        tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
-        try {
-            mailService.sendMail("Medusa User Creation",tmsUser.getEmail(),null,params,"user_template",tmsUser.getInstitution().getInstitutionID());
-        } catch (Exception e) {
-            e.printStackTrace();
+            Map<String, Object> params = new HashMap<>();
+            params.put("institutionName", tmsUser.getInstitution().getInstitutionName());
+            params.put("username", tmsUser.getEmail());
+            params.put("password", tmsUser.getPassword());
+            tmsUser.setDatecreated(date);
+            tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
+            try {
+                mailService.sendMail("Medusa User Creation",tmsUser.getEmail(),null,params,"user_template",tmsUser.getInstitution().getInstitutionID());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return userRepository.save(tmsUser);
         }
-        return userRepository.save(tmsUser);
+        return tmsUser;
     }
 
     @Override

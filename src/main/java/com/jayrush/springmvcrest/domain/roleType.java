@@ -1,5 +1,5 @@
 package com.jayrush.springmvcrest.domain;
 
 public enum roleType {
-    SuperAdmin,InstitutionAdmin,InstitutionUser
+    SuperAdmin, InstitutionAdmin, InstitutionUser, TerminalUser;
 }

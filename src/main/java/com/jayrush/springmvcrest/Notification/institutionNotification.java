@@ -1,16 +1,15 @@
-package com.jayrush.springmvcrest.Service;
+package com.jayrush.springmvcrest.Notification;
 
 import com.google.gson.Gson;
 import com.jayrush.springmvcrest.ClientHandler;
 import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
 import com.jayrush.springmvcrest.Repositories.terminalKeysRepo;
+import com.jayrush.springmvcrest.Service.TransactionInterface;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.hostResponse;
 import com.jayrush.springmvcrest.domain.terminalKeyManagement;
-import com.jayrush.springmvcrest.freedom.MedusaNotification;
-import com.jayrush.springmvcrest.utility.DateFormatter;
 import org.apache.commons.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.text.ParseException;
 import java.util.List;
 import java.util.Objects;
 
@@ -60,7 +58,7 @@ public class institutionNotification {
     @Autowired
     MedusaNotification freedomSync;
 
-    @Scheduled(fixedDelay = 20000)
+//    @Scheduled(fixedDelay = 20000)
     @Transactional
     public void notifyInstitution(){
         logger.info("Starting transaction notification to Institution");
@@ -74,7 +72,13 @@ public class institutionNotification {
             for (TerminalTransactions transaction : transactions) {
                 try {
 //                    response = SyncTrans(transaction);
-
+                    // TODO: 2/9/2020 calculate the actual amount to be settled then add it to their wallet with date
+                    //Only for interswitch transactions
+                    //get the institution from the transaction model
+                    //get the fee from the institution model
+                    //calculate the notification amount using the fee
+                    //save the transaction to new transaction table
+                    //call matipon to credit them less the new amount
                     response = freedomSync.NotifyInstitution(transaction);
                 } catch (IOException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException | DecoderException e) {
                     logger.info(e.getMessage());
@@ -126,20 +130,7 @@ public class institutionNotification {
     }
 
     //todo push getkeys per terminalID
-//    public void getKeysforTerminalID(String terminalID){
-//
-//        Socket s = null;
-//        DataInputStream dis = null;
-//        DataOutputStream dos = null;
-//        ClientHandler clientHandler = new ClientHandler(s, dis,dos);
-//        Terminals terminal = termina.findAll();
-//        for (int i = 0; i<terminalsList.size(); i++){
-//            terminalKeyManagement key = clientHandler.keyManagement(terminalsList.get(i));
-//            key.setId(terminalsList.get(i).getId());
-//            terminalKeysRepo.save(key);
-//        }
-//
-//    }
+
 
 
 }

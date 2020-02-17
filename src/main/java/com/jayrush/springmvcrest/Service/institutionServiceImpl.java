@@ -9,6 +9,8 @@ import com.jayrush.springmvcrest.domain.domainDTO.InstitutionListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
 import com.jayrush.springmvcrest.domain.roleType;
 import com.jayrush.springmvcrest.domain.tmsUser;
+import com.jayrush.springmvcrest.rolesPermissions.models.Roles;
+import com.jayrush.springmvcrest.rolesPermissions.repositories.rolesRepository;
 import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import com.jayrush.springmvcrest.serviceProviders.repository.serviceProviderRepo;
@@ -37,6 +39,8 @@ public class institutionServiceImpl implements institutionservice {
     UserRepository userRepository;
     @Autowired
     serviceProviderRepo serviceProviderRepo;
+    @Autowired
+    rolesRepository rolesRepository;
 
 
     @Override
@@ -94,6 +98,7 @@ public class institutionServiceImpl implements institutionservice {
     }
     //method for creating an institution as a user on the tms
     private void institutionUserCreation(@RequestBody Institution institution) {
+        Roles role = rolesRepository.findByName("ADMIN");
         tmsUser User = new tmsUser();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         String date = simpleDateFormat.format(new Date());
@@ -101,7 +106,7 @@ public class institutionServiceImpl implements institutionservice {
         User.setDatecreated(date);
         User.setFirstname(institution.getInstitutionName());
         User.setInstitution(institution);
-        User.setRole(roleType.SuperAdmin);
+        User.setRole(role);
         User.setUsername(institution.getInstitutionEmail());
         String pass = AppUtility.randomString(10);
         String body = "Username: "+ institution.getInstitutionEmail()+ " password :"+pass;

@@ -1,6 +1,7 @@
 package com.jayrush.springmvcrest.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.jayrush.springmvcrest.rolesPermissions.models.Roles;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -23,14 +24,14 @@ public class tmsUser {
 
 //    @JsonIgnore
     private String username;
-
+//    @JsonIgnore
     private String password;
 
 
     @ManyToOne(cascade = {CascadeType.ALL})
     private Institution institution;
-
-    private roleType role;
+    @OneToOne
+    private Roles role;
     @JsonIgnore
     private boolean changePassword;
 

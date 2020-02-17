@@ -98,6 +98,7 @@ public class ChannelSocketRequestManager
         }
         throw new IOException("Socket not connected");
     }
+
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     private static String bytesToHex(byte[] bytes) {
@@ -112,6 +113,7 @@ public class ChannelSocketRequestManager
 
     public Response toNIBSS(final byte[] Message) throws IOException, ParseException {
         if (this.socket.isConnected()) {
+            this.socket.setSoTimeout(180000);
             Response responseObj = new Response();
             final DataOutputStream Out = new DataOutputStream(this.socket.getOutputStream());
             final DataInputStream In = new DataInputStream(this.socket.getInputStream());
@@ -169,7 +171,7 @@ public class ChannelSocketRequestManager
             try {
 //                socketconn.connect(new InetSocketAddress("10.2.2.65", 7003));
                 socketconn.connect(new InetSocketAddress(host.getHostIp(), host.getHostPort()));
-                socketconn.setSoTimeout(60000);
+                socketconn.setSoTimeout(180000);
                 if (!socketconn.isConnected()) {
                     logger.info("Connection not connected");
                 }

@@ -57,15 +57,15 @@ public class tmsLoginServicesImpl implements tmsLoginServices {
             tmsUserDTO UserDTO = new tmsUserDTO();
             System.out.println("attached token using :: "+User.getUsername());
             String token = jwtTokenUtil.generateToken(User.getUsername());
-            UserDTO.setAuthToken(token);
-            UserDTO.setRole(User.getRole());
-            UserDTO.setInstitution(User.getInstitution());
-            UserDTO.setEmail(User.getEmail());
-            UserDTO.setFirstname(User.getFirstname());
-            UserDTO.setLastname(User.getLastname());
+            User.setToken(token);
+            User.setRole(User.getRole());
+            User.setInstitution(User.getInstitution());
+            User.setEmail(User.getEmail());
+            User.setFirstname(User.getFirstname());
+            User.setLastname(User.getLastname());
             response.setRespCode("00");
             response.setRespDescription("Success");
-            response.setRespBody(UserDTO);
+            response.setRespBody(User);
             return response;
         }else{
             throw new tmsExceptions("Invalid Institution Name");

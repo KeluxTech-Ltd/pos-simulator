@@ -13,4 +13,7 @@ public class profilesDTO {
     private String profileAddress;
     private int port;
     private String zpk;
+    private Double minimumCharge;
+    private Double maximumCharge;
+    private Double feePercentage;
 }

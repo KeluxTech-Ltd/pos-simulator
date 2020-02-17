@@ -7,10 +7,7 @@ import com.jayrush.springmvcrest.Nibss.network.ChannelSocketRequestManager;
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
 import com.jayrush.springmvcrest.Nibss.repository.DataStore;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
-import com.jayrush.springmvcrest.Repositories.TerminalRepository;
-import com.jayrush.springmvcrest.Repositories.TransactionRepository;
-import com.jayrush.springmvcrest.Repositories.globalSettingsRepo;
-import com.jayrush.springmvcrest.Repositories.terminalKeysRepo;
+import com.jayrush.springmvcrest.Repositories.*;
 import com.jayrush.springmvcrest.Service.email.service.MailService;
 import com.jayrush.springmvcrest.Service.nibssToIswInterface;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
@@ -27,10 +24,7 @@ import com.jayrush.springmvcrest.iso8583.IsoType;
 import com.jayrush.springmvcrest.iso8583.IsoValue;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
 import com.jayrush.springmvcrest.utility.CryptoException;
-import com.jayrush.springmvcrest.utility.EncryptionUtil;
 import com.jayrush.springmvcrest.utility.Utils;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.jpos.iso.ISOException;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -42,7 +36,7 @@ import org.springframework.context.annotation.PropertySource;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.*;
+import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -51,7 +45,6 @@ import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
 
@@ -71,6 +64,11 @@ public class ClientHandler extends Thread {
     String ipAddress;
     @Value("${nibss-socket-port}")
     int port;
+
+    @Value("${isw-ipAddress}")
+    String iswIpAddress;
+    @Value("${isw-port}")
+    int iswPort;
 
     @Autowired
     TransactionRepository transactionRepository;
@@ -92,6 +90,14 @@ public class ClientHandler extends Thread {
 
     @Autowired
     globalSettingsRepo globalSettingsRepo;
+    @Value("${interswitch-key}")
+    String iswPinkey;
+    @Value("${tms-key}")
+    String tmsKey;
+
+    @Autowired
+    com.jayrush.springmvcrest.wallet.repository.storedProcedureRepository storedProcedureRepository;
+
 
 
     // Constructor
@@ -105,9 +111,9 @@ public class ClientHandler extends Thread {
     @Override
     public void run() {
         try {
+//            getKeysforTerminalID("2101CX82");
             //check global settings
             boolean globalSettingsON = isGlobalSettingsON();
-
             logger.info("AWaiting data------------------------------------------");
             final byte[] lenBytes = new byte[2];
             dis.readFully(lenBytes);
@@ -126,14 +132,22 @@ public class ClientHandler extends Thread {
 
             Terminals terminals = terminalRepository.findByterminalID(request.getTerminalID());
             if (Objects.isNull(terminals)) {
-                logger.info("Terminal ID not registered {}", request.getTerminalID());
+                logger.info("Terminal ID is null");
+            }
+            String profile;
+            //getting the profile setting to route transaction based on set profile for terminal ID
+            if (globalSettingsON){
+                profile = "ISW";
+                host.setHostName("ISW");
+                host.setHostIp(iswIpAddress);
+                host.setHostPort(iswPort);
+            }else{
+                profile = terminals.getProfile().getProfileName();
+                host.setHostName(terminals.getProfile().getProfileName());
+                host.setHostIp(terminals.getProfile().getProfileIP());
+                host.setHostPort(terminals.getProfile().getPort());
             }
 
-            //getting the profile setting to route transaction based on set profile for terminal ID
-            String profile = terminals.getProfile().getProfileName();
-            host.setHostName(terminals.getProfile().getProfileName());
-            host.setHostIp(terminals.getProfile().getProfileIP());
-            host.setHostPort(terminals.getProfile().getPort());
 
             //to save only transaction messages to database on transaction initialization
             if (mti.equals("0200")) {
@@ -153,28 +167,28 @@ public class ClientHandler extends Thread {
                     if (mti.equals("0200")) {
                         //decrypt pin block
                         byte[] translatedMsg = translatePin(resp, profile);
-                        interswitchProfile(translatedMsg, host, request, globalSettingsON);
+                        interswitchProfile(translatedMsg, host, request);
                     }
 //                    else if (mti.equals("0800")){
 //                        logger.info("Sign on Echo Message");
 //                        SignOnResponse(resp);
 //                    }
                     else {
-                        interswitchProfile(resp, host, request,globalSettingsON);
+                        interswitchProfile(resp, host, request);
                     }
                     break;
                 case "POSVAS":
                 case "EPMS":
                     if (mti.equals("0200")) {
                             byte[] translatedMsg = translatePin(resp, profile);
-                            nibssProfile(translatedMsg, host, request,globalSettingsON);
+                            nibssProfile(translatedMsg, host, request);
                     }
 //                    else if (mti.equals("0800")){
 //                        logger.info("Sign on Echo Message");
 //                        SignOnResponse(resp);
 //                    }
                     else {
-                        nibssProfile(resp, host, request,globalSettingsON);
+                        nibssProfile(resp, host, request);
                     }
                     break;
                 default:
@@ -197,7 +211,7 @@ public class ClientHandler extends Thread {
         boolean globalSettingsON = false;
 //        globalSettings globalSettings = globalSettingsRepo.findById(Long.valueOf(1)).get();
         List<globalSettings> globalSettings = globalSettingsRepo.findAll();
-        if (Objects.nonNull(globalSettings)&& globalSettings.get(0).isSettings()){//use ISW
+        if (Objects.nonNull(globalSettings)&& globalSettings.get(0).isSettings()){//use ISW if true
             globalSettingsON = true;
         }
         return globalSettingsON;
@@ -210,9 +224,8 @@ public class ClientHandler extends Thread {
         byte[] sessionKeyBytes = StringUtils.hexStringToByteArray(terminalKeyManagement.getSessionKey());
         byte[] msgtosend;
         String pinblock = msg.getObjectValue(52);
-        String tmsKey = "28300518865986737073478883921518";//tmsKey for decrypting all request message pinblock
-        String iswkey = "0B1C5669004F5303E40846D738FC7353";//isw static key to encrypt interswitch request pinblock
-//        String iswkey = "D15397C2CECD23B8DF5FE430920E55D6";//isw static key to encrypt interswitch request pinblock
+        //tmsKey for decrypting all request message pinblock
+        //isw static key to encrypt interswitch request pinblock
 
 
         if (Objects.nonNull(pinblock)) {
@@ -221,7 +234,7 @@ public class ClientHandler extends Thread {
             logger.info("Clear pinblock = {}",newPinblock);
 
             if (profile.equals("ISW")) {
-                String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock, iswkey);
+                String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock, iswPinkey);
                 final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) iswPinblock.toUpperCase(), 16);
                 msg.setField(52, (IsoValue) field52);
 
@@ -254,15 +267,15 @@ public class ClientHandler extends Thread {
         return msgtosend;
     }
 
-
-    private void nibssProfile(byte[] resp, host host, TerminalTransactions request, boolean globalSettings) throws IOException {
-        byte[] receivedResponse = sendTransactionToProcess(resp, host, request, globalSettings);
+    private void nibssProfile(byte[] resp, host host, TerminalTransactions request) throws IOException {
+        byte[] receivedResponse = sendTransactionToProcess(resp, host, request);
         assert receivedResponse != null;
         dos.write(receivedResponse);
         dos.flush();
         logger.info("************Response Sent*********");
         dos.close();
     }
+
     private void SignOnResponse(byte[] resp) throws IOException {
         byte[] receivedResponse = null;
         assert receivedResponse != null;
@@ -272,11 +285,11 @@ public class ClientHandler extends Thread {
         dos.close();
     }
 
-    private void interswitchProfile(byte[] resp, host host, TerminalTransactions request, boolean globalSettings) throws IOException, ParseException, RequestProcessingException, ISOException {
+    private void interswitchProfile(byte[] resp, host host, TerminalTransactions request) throws IOException, ParseException, RequestProcessingException, ISOException {
         byte[] fepMessage;
         ISWprocessor processor = new ISWprocessor();
         fepMessage = processor.toFEP(resp);
-        byte[] receivedResponse = sendTransactionToProcess(fepMessage, host, request,globalSettings);
+        byte[] receivedResponse = sendTransactionToProcess(fepMessage, host, request);
         assert receivedResponse != null;
 
 
@@ -305,7 +318,44 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private byte[] sendTransactionToProcess(byte[] messagePayload, host host, TerminalTransactions request, boolean globalSettings) {
+    private void getKeysforTerminalID(String terminalID){
+
+        Terminals terminal = terminalRepository.findByterminalID(terminalID);
+
+        if (Objects.nonNull(terminal)){
+            terminalKeyManagement keys = terminalKeysRepo.findByTerminalID(terminal.getTerminalID());
+            if (Objects.nonNull(keys)){
+                terminalKeyManagement key = keyManagement(terminal);
+                keys.setLastExchangeDateTime(key.getLastExchangeDateTime());
+                keys.setTerminalID(key.getTerminalID());
+                keys.setPinKey(key.getPinKey());
+                keys.setSessionKey(key.getSessionKey());
+                keys.setMasterKey(key.getMasterKey());
+                keys.setParameterDownloaded(key.getParameterDownloaded());
+                terminalKeysRepo.save(keys);
+            }else{
+                terminalKeyManagement terminalKeyManagement = new terminalKeyManagement();
+                terminalKeyManagement key = keyManagement(terminal);
+                terminalKeyManagement.setLastExchangeDateTime(key.getLastExchangeDateTime());
+                terminalKeyManagement.setTerminalID(key.getTerminalID());
+                terminalKeyManagement.setPinKey(key.getPinKey());
+                terminalKeyManagement.setSessionKey(key.getSessionKey());
+                terminalKeyManagement.setMasterKey(key.getMasterKey());
+                terminalKeyManagement.setParameterDownloaded(key.getParameterDownloaded());
+                terminalKeysRepo.save(terminalKeyManagement);
+            }
+
+
+
+        }
+        else {
+            logger.info("terminal Id not found to perform key exchange");
+        }
+
+
+    }
+
+    private byte[] sendTransactionToProcess(byte[] messagePayload, host host, TerminalTransactions request) {
         ChannelSocketRequestManager socketRequester = null;
         TerminalTransactions transactions = new TerminalTransactions();
         Response responseObject = new Response();
@@ -317,29 +367,26 @@ public class ClientHandler extends Thread {
         try {
             //Host Connection connection
             logger.info("Host details {}", host);
-            logger.info("Checking if Global settings is set ");
-
-            if (Objects.equals(globalSettings,false)){
-                socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
-            }
-            else {
-                host.setHostPort(7001);
-                host.setHostIp("10.2.2.65");
-                host.setHostName("ISW");
-                socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
-            }
-
+            socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
 
             //send transaction to Processor
             if (host.getHostName().equals("ISW")) {
                 responseObject = socketRequester.toISW(messagePayload, host);
+                modelMapper.map(responseObject.getResponseMsg(), transactions);
+                transactions.setProcessedBy(host.getHostName());
             }
             else {
                 responseObject = socketRequester.toNIBSS(messagePayload);
+                modelMapper.map(responseObject.getResponseMsg(), transactions);
+                transactions.setProcessedBy("NIBSS");
             }
 
-            modelMapper.map(responseObject.getResponseMsg(), transactions);
+//            modelMapper.map(responseObject.getResponseMsg(), transactions);
             //save transaction response to db if response was gotten
+            //todo push key exchange for transaction
+            if (transactions.getResponseCode().equals("96")){
+                getKeysforTerminalID(transactions.getTerminalID());
+            }
             transaction(transactions);
 
             return responseObject.getResponseByte();
@@ -379,6 +426,7 @@ public class ClientHandler extends Thread {
             //to update the transaction status after response is gotten from host
             TerminalTransactions transactionRequest = transactionRepository.findByrrnAndTerminalID(transactions.getRrn(), transactions.getTerminalID());
             if (Objects.nonNull(transactionRequest)) {
+                String processedBy = transactions.getProcessedBy();
                 transactionRequest.setResponseCode(transactions.getResponseCode());
                 transactionRequest.setResponseDesc(transactions.getResponseDesc());
                 transactionRequest.setMti(transactions.getMti());
@@ -386,12 +434,20 @@ public class ClientHandler extends Thread {
                 transactionRequest.setDateTime(transactions.getDateTime());
                 transactionRequest.setResponseDateTime(date);
                 transactionRequest.setTranComplete(true);
+                transactionRequest.setProcessedBy(processedBy);
                 if (transactions.getResponseCode().equals("00")) {
                     transactionRequest.setStatus("Success");
                 } else {
                     transactionRequest.setStatus("Failed");
                 }
                 transactionRepository.save(transactionRequest);
+                String result = storedProcedureRepository.startFundWallet(transactionRequest.getId());
+                if (Objects.nonNull(result)){
+                    logger.info("Wallet Funding procedure called");
+                }
+                else {
+                    logger.info("Procedure conditions not met");
+                }
             } else {
                 transactions.setResponseDesc("Cannot Find transaction using rrn and Terminal ID to map response");
                 transactions.setStatus("Failed");
@@ -435,72 +491,46 @@ public class ClientHandler extends Thread {
         OfflineCTMK offlineCTMK = new OfflineCTMK();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         String date = simpleDateFormat.format(new Date());
+
         //switch based on profile name
-        switch (terminals.getProfile().getProfileName()) {
-            case "POSVAS":
-                //best convention is to get the zpk from the terminal profile
-                offlineCTMK.setComponentOne("386758793DE364F88319EA0D4C7091EF");
-                offlineCTMK.setComponentTwo("67A78CB3D9C1FE38C1DAB6F154D634D6");
-                try {
-                    keys keys = getKeys_Params(factory, offlineCTMK, host);
-                    terminalKeys.setId(terminals.getId());
-                    terminalKeys.setTerminalID(terminals.getTerminalID());
-                    terminalKeys.setMasterKey(keys.getMasterkey());
-                    terminalKeys.setSessionKey(keys.getSessionKey());
-                    terminalKeys.setPinKey(keys.getPinKey());
-                    terminalKeys.setParameterDownloaded(keys.getParameters());
-                    terminalKeys.setLastExchangeDateTime(date);
-                    return terminalKeys;
-                } catch (Exception ex) {
-                    logger.info("Failed to fetch all keys ", ex);
-                }
-                break;
-
-            case "EPMS":
-                offlineCTMK.setComponentOne("3BB9648A624F32C17C4037C81AD0B5CB");
-                offlineCTMK.setComponentTwo("6491A2BFEC1AD668F7CBFEC4CE1301AD");
-                try {
-                    keys keys = getKeys_Params(factory, offlineCTMK, host);
-                    terminalKeys.setId(terminals.getId());
-                    terminalKeys.setTerminalID(terminals.getTerminalID());
-                    terminalKeys.setMasterKey(keys.getMasterkey());
-                    terminalKeys.setSessionKey(keys.getSessionKey());
-                    terminalKeys.setPinKey(keys.getPinKey());
-                    terminalKeys.setParameterDownloaded(keys.getParameters());
-                    terminalKeys.setLastExchangeDateTime(date);
-                    return terminalKeys;
-                } catch (Exception ex) {
-                    logger.info("Failed to fetch all keys ", ex);
-
-                }
-                break;
-            case "ISW":
+        if (!terminals.getProfile().getProfileName().equals("ISW")){
+            String zmk = terminals.getProfile().getZpk();
+            try {
+                keys keys = getKeys_Params(factory,host,zmk);
                 terminalKeys.setId(terminals.getId());
                 terminalKeys.setTerminalID(terminals.getTerminalID());
-                terminalKeys.setMasterKey("27869791275814834349579874090163");
-                terminalKeys.setSessionKey("Static");
-                terminalKeys.setPinKey("28300518865986737073478883921518");
-                terminalKeys.setParameterDownloaded("Static");
+                terminalKeys.setMasterKey(keys.getMasterkey());
+                terminalKeys.setSessionKey(keys.getSessionKey());
+                terminalKeys.setPinKey(keys.getPinKey());
+                terminalKeys.setParameterDownloaded(keys.getParameters());
                 terminalKeys.setLastExchangeDateTime(date);
                 return terminalKeys;
-
-            default:
-                logger.info("No ZPK exists for profile");
-                return null;
-
+            } catch (Exception ex) {
+                logger.info("Failed to fetch all keys ", ex);
+            }
+        }else {
+            terminalKeys.setId(terminals.getId());
+            terminalKeys.setTerminalID(terminals.getTerminalID());
+            terminalKeys.setMasterKey("27869791275814834349579874090163");
+            terminalKeys.setSessionKey("Static");
+            terminalKeys.setPinKey("28300518865986737073478883921518");
+            terminalKeys.setParameterDownloaded("Static");
+            terminalKeys.setLastExchangeDateTime(date);
+            return terminalKeys;
         }
+
         return terminalKeys;
 
     }
 
-    private keys getKeys_Params(NibssRequestsFactory factory, OfflineCTMK offlineCTMK, host host) {
+    private keys getKeys_Params(NibssRequestsFactory factory, host host, String zmk) {
         keys keys = new keys();
         String masterKey;
         String sessionKey;
         String pinKey;
         String parameters;
 
-        masterKey = factory.getMasterKey(offlineCTMK, host);
+        masterKey = factory.getMasterKey(host, zmk);
         sessionKey = factory.getSessionKey(host);
         pinKey = factory.getPinKey(host);
         parameters = factory.getParameters(host);

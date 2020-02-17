@@ -21,4 +21,5 @@ public class profiles {
     private String zpk;
     @ManyToOne(cascade={PERSIST, MERGE, REMOVE, REFRESH, DETACH})
     private serviceProviders serviceProviders;
+
 }

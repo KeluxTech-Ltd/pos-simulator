@@ -21,4 +21,5 @@ public interface TerminalInterface {
     TerminalListDTO getPagenatedTerminals(PagedRequestDTO pagedTerminalsDTO);
     TerminalListDTO getPagenatedTerminalsByInstitution(PagedInstitutionRequestDTO institution);
     List<profiles> getProfilesByInstitutionName(String institutionName);
+//    void getKeysForTerminal(String terminalID);
 }

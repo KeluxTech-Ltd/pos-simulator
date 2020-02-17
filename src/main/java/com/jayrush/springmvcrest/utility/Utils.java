@@ -22,7 +22,7 @@ public class Utils {
 
     public static String maskPanForReceipt(String pan) {
         StringBuilder maskedPan = new StringBuilder();
-        int maskingStartIndex = 5;
+        int maskingStartIndex = 6;
         int maskingEndIndex = pan.length() - 4;
 
         for (int index = 0; index < pan.length(); index++) {

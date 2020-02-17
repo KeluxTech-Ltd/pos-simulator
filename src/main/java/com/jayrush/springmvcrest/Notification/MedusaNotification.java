@@ -1,4 +1,4 @@
-package com.jayrush.springmvcrest.freedom;
+package com.jayrush.springmvcrest.Notification;
 
 import com.google.gson.Gson;
 import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
@@ -26,7 +26,9 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author JoshuaO
@@ -168,6 +170,7 @@ public class MedusaNotification {
         Institution institution = institutionRepository.findByInstitutionID(transactionRecords.getInstitutionID());
 
         String url = institution.getInstitutionURL() + institution.getInstitutionIntegrationVersion();
+        logger.info("Notification URL is {}",url);
         String TID = transactionRecords.getTerminalID();
         String bankcode = TID.substring(0,4);
         bank bank = bankServiceRepo.findByCbnCode(bankcode);
@@ -190,6 +193,7 @@ public class MedusaNotification {
         String amount = bigDecimalCurrency.toString();
 
         pushWithdrawalPTSPRequest.setAmount(amount);
+        pushWithdrawalPTSPRequest.setProductId(transactionRecords.getProcessedBy());
         pushWithdrawalPTSPRequest.setTerminalId(transactionRecords.getTerminalID());
         pushWithdrawalPTSPRequest.setStatusCode(transactionRecords.getResponseCode());
         pushWithdrawalPTSPRequest.setPan(transactionRecords.getPan());
@@ -210,6 +214,7 @@ public class MedusaNotification {
         JSONObject jsonObject = new JSONObject();
         String bodyAsString = gson.toJson(pushWithdrawalPTSPRequest);
         logger.info("JSON TO STRING {}", bodyAsString);
+//        logger.info("Notification AppKey {}",institution.getInstitutionAppKey());
         byte [] key = Hex.decodeHex(institution.getInstitutionAppKey().toCharArray());
         Cipher cipher = Cipher.getInstance("AES");
 
@@ -218,9 +223,11 @@ public class MedusaNotification {
         cipher.init(Cipher.ENCRYPT_MODE, originalKey);
         byte[] stringBytes = bodyAsString.getBytes(StandardCharsets.UTF_8);
         byte[] encryptedByte = cipher.doFinal(stringBytes);
+//        System.out.println(Arrays.toString(encryptedByte));
         String encryptedString = Base64.encodeBase64String(encryptedByte);
         logger.info("encrypted is {}", encryptedString);
         jsonObject.put("request", encryptedString);
+        logger.info("Json object to string is {}",jsonObject.toString());
 
         RequestBody body = RequestBody.create(MEDIA_TYPE, jsonObject.toString());
         Request request = new Request.Builder()
@@ -232,9 +239,17 @@ public class MedusaNotification {
 
         //Create a new call object with POST method
         OkHttpClient client = new OkHttpClient();
+        client = new OkHttpClient.Builder()
+
+                .connectTimeout(90, TimeUnit.SECONDS)
+                .writeTimeout(90, TimeUnit.SECONDS)
+                .readTimeout(90, TimeUnit.SECONDS).build();
+
+        client.readTimeoutMillis();
         Call call = client.newCall(request);
         okhttp3.Response response = null;
         response = call.execute();
+
 
         //Check if Call is successful
         if (response.isSuccessful()) {
@@ -251,7 +266,8 @@ public class MedusaNotification {
             logger.info("Response Body: {} ",respBody);
 
             res = gson.fromJson(respBody, Response.class);
-        }else {
+        }
+        else{
             //Get OkHttp Resp Body
             respBody = response.body().string();
             logger.info("Response Body: {}"  , respBody);
@@ -269,6 +285,7 @@ public class MedusaNotification {
         count++;
         return respBody;
     }
+
     public static void main(String[]args) throws DecoderException {
         String appkey = "b697772320da7258386eb3b002833d13";
         byte[]key = Hex.decodeHex(appkey.toCharArray());

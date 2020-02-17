@@ -9,5 +9,6 @@ import java.util.List;
 @Repository
 public interface UserRepository extends JpaRepository<tmsUser,Long > {
     tmsUser findByusername(String username);
+    tmsUser findByFirstnameAndEmail(String firstname,String email);
     List<tmsUser>findByInstitution_InstitutionID(String institutionID);
 }

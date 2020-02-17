@@ -2,11 +2,10 @@ package com.jayrush.springmvcrest.Service;
 
 import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
 import com.jayrush.springmvcrest.Repositories.TerminalRepository;
-import com.jayrush.springmvcrest.domain.Institution;
+import com.jayrush.springmvcrest.Repositories.terminalKeysRepo;
+import com.jayrush.springmvcrest.domain.*;
 import com.jayrush.springmvcrest.domain.Response;
-import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.*;
-import com.jayrush.springmvcrest.domain.terminalType;
 import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import com.jayrush.springmvcrest.serviceProviders.repository.profilesServiceRepo;
 import io.github.mapper.excel.ExcelMapper;
@@ -46,6 +45,9 @@ public class TerminalInterfaceImpl implements TerminalInterface {
 
     @Autowired
     InstitutionRepository institutionRepository;
+
+    @Autowired
+    terminalKeysRepo terminalKeysRepo;
 
 
 
@@ -327,4 +329,39 @@ public class TerminalInterfaceImpl implements TerminalInterface {
         }
         return Collections.emptyList() ;
     }
+
+//    @Override
+//    public void getKeysForTerminal(String terminalID) {
+//        Terminals terminal = terminalRepository.findByterminalID(terminalID);
+//
+//        if (Objects.nonNull(terminal)){
+//            terminalKeyManagement keys = terminalKeysRepo.findByTerminalID(terminal.getTerminalID());
+//            if (Objects.nonNull(keys)){
+//                terminalKeyManagement key = keyManagement(terminal);
+//                keys.setLastExchangeDateTime(key.getLastExchangeDateTime());
+//                keys.setTerminalID(key.getTerminalID());
+//                keys.setPinKey(key.getPinKey());
+//                keys.setSessionKey(key.getSessionKey());
+//                keys.setMasterKey(key.getMasterKey());
+//                keys.setParameterDownloaded(key.getParameterDownloaded());
+//                terminalKeysRepo.save(keys);
+//            }else{
+//                terminalKeyManagement terminalKeyManagement = new terminalKeyManagement();
+//                terminalKeyManagement key = keyManagement(terminal);
+//                terminalKeyManagement.setLastExchangeDateTime(key.getLastExchangeDateTime());
+//                terminalKeyManagement.setTerminalID(key.getTerminalID());
+//                terminalKeyManagement.setPinKey(key.getPinKey());
+//                terminalKeyManagement.setSessionKey(key.getSessionKey());
+//                terminalKeyManagement.setMasterKey(key.getMasterKey());
+//                terminalKeyManagement.setParameterDownloaded(key.getParameterDownloaded());
+//                terminalKeysRepo.save(terminalKeyManagement);
+//            }
+//
+//
+//
+//        }
+//        else {
+//            logger.info("terminal Id not found to perform key exchange");
+//        }
+//    }
 }

@@ -2,6 +2,7 @@ package com.jayrush.springmvcrest.domain.domainDTO;
 
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.roleType;
+import com.jayrush.springmvcrest.rolesPermissions.models.Roles;
 import lombok.Data;
 
 @Data
@@ -14,7 +15,8 @@ public class tmsUserDTO {
 
     private Institution institution;
 
-    private roleType role;
+    private Roles role;
 
     private String authToken;
+
 }

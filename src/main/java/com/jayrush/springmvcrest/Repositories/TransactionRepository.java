@@ -25,11 +25,12 @@ public interface TransactionRepository extends JpaRepository<TerminalTransaction
 
     List<TerminalTransactions> findByProcessedAndTranComplete(boolean processed, boolean tranComplete);
 
-    Page<TerminalTransactions>findByinstitutionIDAndDateCreatedBetween(String institutionID, Date from, Date to, Pageable pageable);
+    Page<TerminalTransactions>findByinstitutionIDAndDateTimeBetween(String institutionID, Date from, Date to, Pageable pageable);
+    Page<TerminalTransactions>findTopByinstitutionIDAndDateTimeBetween(String institutionID, String from, String to, Pageable pageable);
 
-    Page<TerminalTransactions> findByinstitutionID(String institutionID, Pageable paged);
+    Page<TerminalTransactions> findTopByinstitutionID(String institutionID, Pageable paged);
 
-    @Query(value = "select t from TerminalTransactions t  order by t.dateCreated desc")
+    @Query(value = "select t from TerminalTransactions t  order by t.id desc")
     Page<TerminalTransactions> SelectAll(Pageable pageable);
 
     @Query(value = "select * from transaction_logs t\n" +
@@ -50,7 +51,8 @@ public interface TransactionRepository extends JpaRepository<TerminalTransaction
 //            "FROM transaction_logs\n" +
 //            "ORDER BY id DESC \n" +
 //            "limit 10", nativeQuery = true)
-    @Query(value = "SELECT TOP 10 t.* FROM dbo.transaction_logs t", nativeQuery = true)
+//    @Query(value = "SELECT TOP 10 t.* FROM dbo.transaction_logs t", nativeQuery = true)
+    @Query(value = "SELECT TOP(10) * FROM transaction_logs ORDER BY id DESC", nativeQuery = true)
     List<TerminalTransactions> getRecentTransactions();
 
     //total successful monthly traansactions(Month)

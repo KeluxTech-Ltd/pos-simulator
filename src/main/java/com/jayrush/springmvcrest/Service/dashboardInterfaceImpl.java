@@ -40,6 +40,11 @@ public class dashboardInterfaceImpl implements dashboardInterface {
         cal.add(Calendar.DATE, -30);
         return cal.getTime();
     }
+    private Date month1() {
+        final Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -31);
+        return cal.getTime();
+    }
     private String getYesterdayDateString() {
         DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
         return dateFormat.format(yesterday());
@@ -48,6 +53,12 @@ public class dashboardInterfaceImpl implements dashboardInterface {
         DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
         return dateFormat.format(month());
     }
+
+    private String getlastMonthDateString() {
+        DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+        return dateFormat.format(month1());
+    }
+
     private String getlastmonthDateString2() {
         DateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         return dateFormat.format(month());
@@ -90,6 +101,7 @@ public class dashboardInterfaceImpl implements dashboardInterface {
 
         //total Successful in the month
         String lastmonth = getlastmonthDateString();
+        String lastMonth = getlastMonthDateString();
         List<TerminalTransactions> successfulTransactions = transactionRepository.findByStatusAndDateCreatedBetween("Success",today,lastmonth);
         dashboardUtils.setSuccess(successfulTransactions.size());
 
@@ -105,7 +117,8 @@ public class dashboardInterfaceImpl implements dashboardInterface {
         String now = simpleDateFormat2.format(new Date());
 
         String lastmonthDate = getlastmonthDateString2();
-        Double successfulAmount = transactionRepository.transactionAmount(lastmonth,now);
+
+        Double successfulAmount = transactionRepository.transactionAmount(lastMonth,now);
         dashboardUtils.setTotalSuccessfulAmount(successfulAmount);
         return dashboardUtils;
     }

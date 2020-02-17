@@ -6,7 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class DateUtil {
-    public static Date dateFullFormat(String date) {
+        public static Date dateFullFormat(String date) {
         Date date1 = null;
         DateFormat format = new SimpleDateFormat("dd-MM-yyyy");
         try {
