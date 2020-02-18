@@ -130,71 +130,90 @@ public class ClientHandler extends Thread {
             //to log the request message
             final TerminalTransactions request = parseRequest(resp);
 
-            Terminals terminals = terminalRepository.findByterminalID(request.getTerminalID());
-            if (Objects.isNull(terminals)) {
-                logger.info("Terminal ID is null");
+            //check if amount is less than N15
+            double amount = Double.parseDouble(request.getAmount());
+            logger.info("transaction Amount is {} ",amount);
+            if (amount<15){
+                logger.info("Amount less than N100");
+                IsoMessage transactionResponse = toISo(resp);
+                ISWprocessor processor = new ISWprocessor();
+                byte[] toPOS = processor.mockResponseForAmountLimit(transactionResponse);
+                dos.write(toPOS);
+                dos.flush();
+                logger.info("************Response Sent*********");
+                dos.close();
             }
-            String profile;
-            //getting the profile setting to route transaction based on set profile for terminal ID
-            if (globalSettingsON){
-                profile = "ISW";
-                host.setHostName("ISW");
-                host.setHostIp(iswIpAddress);
-                host.setHostPort(iswPort);
-            }else{
-                profile = terminals.getProfile().getProfileName();
-                host.setHostName(terminals.getProfile().getProfileName());
-                host.setHostIp(terminals.getProfile().getProfileIP());
-                host.setHostPort(terminals.getProfile().getPort());
-            }
+            else {
+                Terminals terminals = terminalRepository.findByterminalID(request.getTerminalID());
+                if (Objects.isNull(terminals))
+                {
+                    logger.info("Terminal ID is null");
+                }
+                String profile;
+                //getting the profile setting to route transaction based on set profile for terminal ID
+                if (globalSettingsON){
+                    profile = "ISW";
+                    host.setHostName("ISW");
+                    host.setHostIp(iswIpAddress);
+                    host.setHostPort(iswPort);
+                }else{
+                    profile = terminals.getProfile().getProfileName();
+                    host.setHostName(terminals.getProfile().getProfileName());
+                    host.setHostIp(terminals.getProfile().getProfileIP());
+                    host.setHostPort(terminals.getProfile().getPort());
+                }
 
 
-            //to save only transaction messages to database on transaction initialization
-            if (mti.equals("0200")) {
-                SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
-                String date = simpleDateFormat1.format(new Date());
-                request.setInstitutionID(terminals.getInstitution().getInstitutionID());
-                request.setRequestDateTime(date);
+                //to save only transaction messages to database on transaction initialization
+                if (mti.equals("0200")) {
+                    SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
+                    String date = simpleDateFormat1.format(new Date());
+                    request.setInstitutionID(terminals.getInstitution().getInstitutionID());
+                    request.setRequestDateTime(date);
 
-                //masked pan
-                request.setPan(Utils.maskPanForReceipt(request.getPan()));
-                transactionRepository.save(request);
-            }
+                    //masked pan
+                    request.setPan(Utils.maskPanForReceipt(request.getPan()));
+                    transactionRepository.save(request);
+                }
 
-            //Host Switching based on profile setting gotten
-            switch (profile) {
-                case "ISW":
-                    if (mti.equals("0200")) {
-                        //decrypt pin block
-                        byte[] translatedMsg = translatePin(resp, profile);
-                        interswitchProfile(translatedMsg, host, request);
-                    }
+                //Host Switching based on profile setting gotten
+                switch (profile) {
+                    case "ISW":
+                        if (mti.equals("0200")) {
+                            //decrypt pin block
+                            byte[] translatedMsg = translatePin(resp, profile);
+                            interswitchProfile(translatedMsg, host, request);
+                        }
 //                    else if (mti.equals("0800")){
 //                        logger.info("Sign on Echo Message");
 //                        SignOnResponse(resp);
 //                    }
-                    else {
-                        interswitchProfile(resp, host, request);
-                    }
-                    break;
-                case "POSVAS":
-                case "EPMS":
-                    if (mti.equals("0200")) {
+                        else {
+                            interswitchProfile(resp, host, request);
+                        }
+                        break;
+                    case "POSVAS":
+                    case "EPMS":
+                        if (mti.equals("0200")) {
                             byte[] translatedMsg = translatePin(resp, profile);
                             nibssProfile(translatedMsg, host, request);
-                    }
+                        }
 //                    else if (mti.equals("0800")){
 //                        logger.info("Sign on Echo Message");
 //                        SignOnResponse(resp);
 //                    }
-                    else {
-                        nibssProfile(resp, host, request);
-                    }
-                    break;
-                default:
-                    logger.info("Profile does not exist for {}", profile);
-                    break;
+                        else {
+                            nibssProfile(resp, host, request);
+                        }
+                        break;
+                    default:
+                        logger.info("Profile does not exist for {}", profile);
+                        break;
+                }
             }
+
+
+
         } catch (IOException | ParseException | RequestProcessingException | ISOException | CryptoException e) {
             logger.info(e.getMessage());
 

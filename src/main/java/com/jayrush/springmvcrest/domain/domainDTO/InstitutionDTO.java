@@ -20,4 +20,8 @@ public class InstitutionDTO {
     private String institutionURL;
     private String institutionAppKey;
     private String institutionIntegrationVersion;
+    private Double minimumCharge;
+    private Double maximumCharge;
+    private Double feePercentage;
+    private String token;
 }

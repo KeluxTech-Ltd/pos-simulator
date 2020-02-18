@@ -11,6 +11,10 @@ import com.jayrush.springmvcrest.domain.domainDTO.tmsUserDTO;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import com.jayrush.springmvcrest.exceptions.tmsExceptions;
 import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
+import com.jayrush.springmvcrest.rolesPermissions.models.Permissions;
+import com.jayrush.springmvcrest.rolesPermissions.repositories.permissionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -30,6 +34,11 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
     JwtTokenUtil jwtTokenUtil;
     @Autowired
     MailService mailService;
+    @Autowired
+    permissionRepository permissionRepository;
+
+    private Logger logger = LoggerFactory.getLogger(superAdminLoginServiceImpl.class);
+
 
     @Override
     public Response superAdminLogin(LoginDTO loginDTO) {
@@ -82,24 +91,33 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
     public tmsUser superAdminCreateUsers(tmsUser tmsUser) {
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         String date = simpleDateFormat.format(new Date());
+        String tmsUserUsername = jwtTokenUtil.getUsernameFromToken(tmsUser.getToken());
+        Permissions permissions = permissionRepository.findByName("CREATE_USER");
 
-        tmsUser user = userRepository.findByFirstnameAndEmail(tmsUser.getFirstname(),tmsUser.getEmail());
-        if (Objects.isNull(user)){
-            tmsUser.setUsername(tmsUser.getEmail());
 
-            Map<String, Object> params = new HashMap<>();
-            params.put("institutionName", tmsUser.getInstitution().getInstitutionName());
-            params.put("username", tmsUser.getEmail());
-            params.put("password", tmsUser.getPassword());
-            tmsUser.setDatecreated(date);
-            tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
-            try {
-                mailService.sendMail("Medusa User Creation",tmsUser.getEmail(),null,params,"user_template",tmsUser.getInstitution().getInstitutionID());
-            } catch (Exception e) {
-                e.printStackTrace();
+        tmsUser User = userRepository.findByusername(tmsUserUsername);
+
+        if ((Objects.nonNull(User)) && User.getRole().getPermissions().contains(permissions)){
+            tmsUser user = userRepository.findByFirstnameAndEmail(tmsUser.getFirstname(),tmsUser.getEmail());
+            if (Objects.isNull(user)){
+                tmsUser.setUsername(tmsUser.getEmail());
+
+                Map<String, Object> params = new HashMap<>();
+                params.put("institutionName", tmsUser.getInstitution().getInstitutionName());
+                params.put("username", tmsUser.getEmail());
+                params.put("password", tmsUser.getPassword());
+                tmsUser.setDatecreated(date);
+                tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
+                try {
+                    mailService.sendMail("Medusa User Creation",tmsUser.getEmail(),null,params,"user_template",tmsUser.getInstitution().getInstitutionID());
+                } catch (Exception e) {
+                    logger.info(e.getMessage());
+                }
+                return userRepository.save(tmsUser);
             }
-            return userRepository.save(tmsUser);
         }
+
+
         return tmsUser;
     }
 
@@ -122,11 +140,11 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
                 userRepository.delete(tmsUser1);
             }
             else {
-                System.out.println("Incorrect Password");
+                logger.info("Incorrect Password");
             }
         }
         else {
-            System.out.println("Invalid User");
+            logger.info("Invalid User");
         }
     }
 }

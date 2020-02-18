@@ -9,13 +9,22 @@ import com.jayrush.springmvcrest.domain.domainDTO.InstitutionListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
 import com.jayrush.springmvcrest.domain.roleType;
 import com.jayrush.springmvcrest.domain.tmsUser;
+import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
+import com.jayrush.springmvcrest.rolesPermissions.models.Permissions;
 import com.jayrush.springmvcrest.rolesPermissions.models.Roles;
+import com.jayrush.springmvcrest.rolesPermissions.repositories.permissionRepository;
 import com.jayrush.springmvcrest.rolesPermissions.repositories.rolesRepository;
 import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import com.jayrush.springmvcrest.serviceProviders.repository.serviceProviderRepo;
 import com.jayrush.springmvcrest.utility.AppUtility;
+import com.jayrush.springmvcrest.wallet.models.dtos.walletAccountdto;
+import com.jayrush.springmvcrest.wallet.models.walletAccount;
+import com.jayrush.springmvcrest.wallet.repository.walletAccountRepository;
+import com.jayrush.springmvcrest.wallet.service.walletServices;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,6 +50,17 @@ public class institutionServiceImpl implements institutionservice {
     serviceProviderRepo serviceProviderRepo;
     @Autowired
     rolesRepository rolesRepository;
+    @Autowired
+    walletServices walletServices;
+    @Autowired
+    walletAccountRepository walletAccountRepository;
+    @Autowired
+    JwtTokenUtil jwtTokenUtil;
+    @Autowired
+    permissionRepository permissionRepository;
+
+    private Logger logger = LoggerFactory.getLogger(institutionServiceImpl.class);
+
 
 
     @Override
@@ -55,44 +75,72 @@ public class institutionServiceImpl implements institutionservice {
 
     @Override
     public Institution registerInstitution(InstitutionDTO institution) {
-        Institution institution1 = new Institution();
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-        String date = simpleDateFormat.format(new Date());
+        String tmsUserUsername = jwtTokenUtil.getUsernameFromToken(institution.getToken());
+        Permissions permissions = permissionRepository.findByName("CREATE_INSTITUTION");
 
-        String institutionID = StringUtils.substring(institution.getInstitutionName(), 0, 4).toUpperCase()+AppUtility.randomNumber(6);
 
-        serviceProviders providers = serviceProviderRepo.findByProviderName(institution.getServiceProviderName());
-        institution1.setDateCreated(date);
-        institution1.setInstitutionID(institutionID);
-        institution1.setInstitutionName(institution.getInstitutionName().toUpperCase());
-        institution1.setInstitutionEmail(institution.getInstitutionEmail());
-        institution1.setInstitutionPhone(institution.getInstitutionPhone());
-        institution1.setSettlementAccount(institution.getSettlementAccount());
-        institution1.setCreatedBy(institution.getCreatedBy());
-        institution1.setBank(institution.getBank());
-        institution1.setServiceProviders(providers);
-        institution1.setInstitutionAppKey(institution.getInstitutionAppKey());
-        institution1.setInstitutionURL(institution.getInstitutionURL());
-        institution1.setInstitutionIntegrationVersion(institution.getInstitutionIntegrationVersion());
+        tmsUser User1 = userRepository.findByusername(tmsUserUsername);
 
-        Institution institution2 = institutionRepository.findByinstitutionNameAndInstitutionEmail(institution.getInstitutionName(),institution.getInstitutionEmail());
+        if ((Objects.nonNull(User1))&&User1.getRole().getPermissions().contains(permissions)){
+            Institution institution1 = new Institution();
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+            String date = simpleDateFormat.format(new Date());
 
-        if (Objects.nonNull(institution2)){
-            institution1.setSaved(false);
-            institution1.setSavedDescription("Institution already exists");
-            return institution1;
-        }
-        else if (Objects.isNull(providers)){
-            institution1.setSaved(false);
-            institution1.setSavedDescription("Service providers not found");
-            return institution1;
+            String institutionID = StringUtils.substring(institution.getInstitutionName(), 0, 4).toUpperCase()+AppUtility.randomNumber(6);
+
+            serviceProviders providers = serviceProviderRepo.findByProviderName(institution.getServiceProviderName());
+            institution1.setDateCreated(date);
+            institution1.setInstitutionID(institutionID);
+            institution1.setInstitutionName(institution.getInstitutionName().toUpperCase());
+            institution1.setInstitutionEmail(institution.getInstitutionEmail());
+            institution1.setInstitutionPhone(institution.getInstitutionPhone());
+            institution1.setSettlementAccount(institution.getSettlementAccount());
+            institution1.setCreatedBy(institution.getCreatedBy());
+            institution1.setBank(institution.getBank());
+            institution1.setServiceProviders(providers);
+            institution1.setInstitutionAppKey(institution.getInstitutionAppKey());
+            institution1.setInstitutionURL(institution.getInstitutionURL());
+            institution1.setInstitutionIntegrationVersion(institution.getInstitutionIntegrationVersion());
+
+            Institution institution2 = institutionRepository.findByinstitutionNameAndInstitutionEmail(institution.getInstitutionName(),institution.getInstitutionEmail());
+
+            if (Objects.nonNull(institution2)){
+                institution1.setSaved(false);
+                institution1.setSavedDescription("Institution already exists");
+                return institution1;
+            }
+            else if (Objects.isNull(providers)){
+                institution1.setSaved(false);
+                institution1.setSavedDescription("Service providers not found");
+                return institution1;
+            }
+            else {
+                institutionUserCreation(institution1);
+                institution1.setSavedDescription(null);
+                institution1.setSaved(true);
+
+                walletAccount walletAccount = walletAccountRepository.findByWalletNumber(institution1.getInstitutionID());
+                if (Objects.isNull(walletAccount)){
+                    walletAccountdto walletAccountdto = new walletAccountdto();
+                    walletAccountdto.setFeePercentage(institution.getFeePercentage());
+                    walletAccountdto.setInstitutionID(institutionID);
+                    walletAccountdto.setMaximumCharge(institution.getMaximumCharge());
+                    walletAccountdto.setMinimumCharge(institution.getMinimumCharge());
+                    walletAccountdto.setPurpose(institution.getInstitutionName()+" Wallet Account");
+                    walletServices.createWalletAccount(walletAccountdto);
+                }
+                else {
+                    logger.info("Wallet Account already Exists for {}",institution1.getInstitutionName());
+                }
+                return institutionRepository.save(institution1);
+            }
         }
         else {
-            institutionUserCreation(institution1);
-            institution1.setSavedDescription(null);
-            institution1.setSaved(true);
-            return institutionRepository.save(institution1);
+            logger.info("Requires CREATE_INSTITUTION permission");
+            return null;
         }
+
+
 
 
     }

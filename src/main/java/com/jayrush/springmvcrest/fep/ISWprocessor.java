@@ -2,6 +2,7 @@ package com.jayrush.springmvcrest.fep;
 
 import com.globasure.nibss.tms.client.lib.utils.StringUtils;
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
+import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
 import com.jayrush.springmvcrest.PostBridgePackager;
 import com.jayrush.springmvcrest.Service.nibssToIswInterface;
 import com.jayrush.springmvcrest.exceptions.EmvProcessingException;
@@ -32,6 +33,7 @@ import static com.jayrush.springmvcrest.Nibss.utils.DataUtil.parseTLV;
 import static com.jayrush.springmvcrest.utility.MainConverter.hexify;
 import static com.jayrush.springmvcrest.utility.Utils.maskPanForReceipt;
 import static com.jayrush.springmvcrest.utility.emvUtil.extractKeyValuePairs;
+import static org.jpos.iso.ISOUtil.concat;
 
 /**
  * @author JoshuaO
@@ -207,6 +209,7 @@ public class ISWprocessor {
                 }
             }
         }
+
         final IsoMessage isoMessage = new IsoMessage();
         isoMessage.setType(528);
         final IsoValue<String> field2 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)iswResponse.getString(2));
@@ -258,7 +261,6 @@ public class ISWprocessor {
         isoMessage.setField(123, (IsoValue)field123);
         isoMessage.setField(124, (IsoValue)field124);
         isoMessage.setField(128, (IsoValue)field128);
-
         return isoMessage.writeData();
 
     }
@@ -274,6 +276,65 @@ public class ISWprocessor {
         sb.append(inputString);
 
         return sb.toString();
+    }
+
+    public byte[] mockResponseForAmountLimit(IsoMessage isoMessage)
+    {
+        isoMessage.setType(528);
+        final IsoValue<String> field2 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)isoMessage.getObjectValue(2));
+        final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)isoMessage.getObjectValue(3), 6);
+        final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.AMOUNT, (Object)isoMessage.getObjectValue(4), 12);
+        final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE10, (Object)isoMessage.getObjectValue(7), 10);
+        final IsoValue<String> field11 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)isoMessage.getObjectValue(11), 6);
+        final IsoValue<String> field12 = (IsoValue<String>)new IsoValue(IsoType.TIME, (Object)isoMessage.getObjectValue(12), 6);
+        final IsoValue<String> field13 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)isoMessage.getObjectValue(13), 4);
+        final IsoValue<String> field14 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)isoMessage.getObjectValue(14));
+        final IsoValue<String> field15 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)isoMessage.getObjectValue(15));
+        final IsoValue<String> field22 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)isoMessage.getObjectValue(22), 3);
+        final IsoValue<String> field25 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)isoMessage.getObjectValue(25), 2);
+        final IsoValue<String> field30 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)"C00000000", 9);
+        final IsoValue<String> field33 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)"000000");
+        final IsoValue<String> field35 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)isoMessage.getObjectValue(35));
+        final IsoValue<String> field37 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)isoMessage.getObjectValue(37), 12);
+        final IsoValue<String> field39 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)"13", 2);
+        final IsoValue<String> field41 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)isoMessage.getObjectValue(41), 8);
+        final IsoValue<String> field42 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)isoMessage.getObjectValue(42), 15);
+        final IsoValue<String> field49 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)isoMessage.getObjectValue(49), 3);
+        final IsoValue<String> field55 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)"910a3E14388911C5FADE3035");
+        final IsoValue<String> field59 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)"010101");
+        final IsoValue<String> field123 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)isoMessage.getObjectValue(123));
+        final IsoValue<String> field124 = (IsoValue<String>)new IsoValue(IsoType.LLLLVAR, (Object)"05004^NST");
+        final IsoValue<String> field128 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)"44b603eeee222ddf803c586ded0123a912281dd24c368f552a3b7e803e166464",64);
+
+        isoMessage.setField(2, (IsoValue)field2);
+        isoMessage.setField(3, (IsoValue)field3);
+        isoMessage.setField(4, (IsoValue)field4);
+        isoMessage.setField(7, (IsoValue)field7);
+        isoMessage.setField(11, (IsoValue)field11);
+        isoMessage.setField(12, (IsoValue)field12);
+        isoMessage.setField(13, (IsoValue)field13);
+        isoMessage.setField(14, (IsoValue)field14);
+        isoMessage.setField(15, (IsoValue)field15);
+        isoMessage.setField(22, (IsoValue)field22);
+        isoMessage.setField(25, (IsoValue)field25);
+        isoMessage.setField(30, (IsoValue)field30);
+        isoMessage.setField(33, (IsoValue)field33);
+        isoMessage.setField(35, (IsoValue)field35);
+        isoMessage.setField(37, (IsoValue)field37);
+        isoMessage.setField(39, (IsoValue)field39);
+        isoMessage.setField(41, (IsoValue)field41);
+        isoMessage.setField(42, (IsoValue)field42);
+        isoMessage.setField(49, (IsoValue)field49);
+        isoMessage.setField(55, (IsoValue)field55);
+        isoMessage.setField(59, (IsoValue)field59);
+        isoMessage.setField(123, (IsoValue)field123);
+        isoMessage.setField(124, (IsoValue)field124);
+        isoMessage.setField(128, (IsoValue)field128);
+        byte[] resp = isoMessage.writeData();
+        final short len = (short)resp.length;
+        final byte[] headBytes = DataUtil.shortToBytes(len);
+        final byte[] response = concat(headBytes, resp);
+        return response;
     }
 
 

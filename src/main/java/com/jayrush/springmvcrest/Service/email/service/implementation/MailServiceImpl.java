@@ -79,12 +79,13 @@ public class MailServiceImpl implements MailService {
                     mail.setLastSent(new Date());
                     emailSender.send(messagePreparator);
                     logger.info("Mail successfully sent");
+                    mailRepository.save(mail);
                 } catch (MailException e) {
                     //mail.setFailureReason(e.getMessage());
                     logger.error("Error sending mail", e);
                     //runtime exception; compiler will not force you to handle it
                 }
-                mailRepository.save(mail);
+
 
             }
         });
