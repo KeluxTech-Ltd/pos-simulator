@@ -21,9 +21,9 @@ import java.util.List;
 public class InstitutionController {
     private static final Logger logger = LoggerFactory.getLogger(InstitutionController.class);
     public static final String BASE_URL = "/api/v1/institution";
-    public static final String RESP_CODE = "00";
-    public static final String SUCCESS = "success";
-    public static final String RESP_CODE1 = "96";
+    private static final String RESP_CODE = "00";
+    private static final String SUCCESS = "success";
+    private static final String RESP_CODE1 = "96";
     public static final String FAILED = "Failed";
 
     @Autowired
@@ -72,11 +72,11 @@ public class InstitutionController {
     }
 
 
-    @GetMapping("/{id}")
-    public ResponseEntity<?> GetInstitutionsByID(@PathVariable Long id){
+    @GetMapping("/{institutionID}")
+    public ResponseEntity<?> GetInstitutionsByID(@PathVariable String institutionID){
         try {
             Response response = new Response();
-            Institution institution =  institutionService.getinstitutionbyid(id);
+            Institution institution =  institutionService.getinstitutionbyid(institutionID);
             response.setRespCode(RESP_CODE);
             response.setRespDescription(SUCCESS);
             response.setRespBody(institution);
@@ -113,11 +113,11 @@ public class InstitutionController {
 
 
 
-    @PutMapping("/{id}")
-    public ResponseEntity<?> UpdateInstitution(@PathVariable Long id, @RequestBody Institution institution){
+    @PutMapping("/{institutionID}")
+    public ResponseEntity<?> UpdateInstitution(@PathVariable String institutionID, @RequestBody InstitutionDTO institution){
         try {
             Response response = new Response();
-            Institution t =  institutionService.editInstitution(institution);
+            Institution t =  institutionService.editInstitution(institutionID,institution);
             response.setRespCode(RESP_CODE);
             response.setRespDescription(SUCCESS);
             response.setRespBody(t);

@@ -3,12 +3,8 @@ package com.jayrush.springmvcrest.domain.domainDTO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 public class InstitutionDTO {
-    @JsonIgnore
-    private long id;
     private String institutionName;
     private String institutionEmail;
     private String institutionPhone;
@@ -24,4 +20,5 @@ public class InstitutionDTO {
     private Double maximumCharge;
     private Double feePercentage;
     private String token;
+    private Boolean globalSettings;
 }

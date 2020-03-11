@@ -193,7 +193,6 @@ public class MedusaNotification {
         String amount = bigDecimalCurrency.toString();
 
         pushWithdrawalPTSPRequest.setAmount(amount);
-        pushWithdrawalPTSPRequest.setProductId(transactionRecords.getProcessedBy());
         pushWithdrawalPTSPRequest.setTerminalId(transactionRecords.getTerminalID());
         pushWithdrawalPTSPRequest.setStatusCode(transactionRecords.getResponseCode());
         pushWithdrawalPTSPRequest.setPan(transactionRecords.getPan());
@@ -208,7 +207,7 @@ public class MedusaNotification {
             }
         pushWithdrawalPTSPRequest.setStan(transactionRecords.getStan());
         pushWithdrawalPTSPRequest.setTransactionType("3Line");
-        pushWithdrawalPTSPRequest.setProductId("3LINE001");
+        pushWithdrawalPTSPRequest.setProductId(transactionRecords.getProcessedBy());
         pushWithdrawalPTSPRequest.setTransactionTime(transactionRecords.getRequestDateTime());
 
         JSONObject jsonObject = new JSONObject();

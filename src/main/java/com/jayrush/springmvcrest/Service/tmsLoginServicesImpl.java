@@ -54,7 +54,6 @@ public class tmsLoginServicesImpl implements tmsLoginServices {
             if(!passwordEncoder.matches(loginDto.getPassword(),User.getPassword())){
                 throw new tmsExceptions("Invalid User Password");
             }
-            tmsUserDTO UserDTO = new tmsUserDTO();
             System.out.println("attached token using :: "+User.getUsername());
             String token = jwtTokenUtil.generateToken(User.getUsername());
             User.setToken(token);

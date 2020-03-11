@@ -7,14 +7,12 @@ import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.InstitutionListDTO;
 import com.jayrush.springmvcrest.domain.domainDTO.PagedRequestDTO;
-import com.jayrush.springmvcrest.domain.roleType;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
 import com.jayrush.springmvcrest.rolesPermissions.models.Permissions;
 import com.jayrush.springmvcrest.rolesPermissions.models.Roles;
 import com.jayrush.springmvcrest.rolesPermissions.repositories.permissionRepository;
 import com.jayrush.springmvcrest.rolesPermissions.repositories.rolesRepository;
-import com.jayrush.springmvcrest.serviceProviders.Models.profiles;
 import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import com.jayrush.springmvcrest.serviceProviders.repository.serviceProviderRepo;
 import com.jayrush.springmvcrest.utility.AppUtility;
@@ -23,6 +21,7 @@ import com.jayrush.springmvcrest.wallet.models.walletAccount;
 import com.jayrush.springmvcrest.wallet.repository.walletAccountRepository;
 import com.jayrush.springmvcrest.wallet.service.walletServices;
 import org.apache.commons.lang3.StringUtils;
+import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +57,8 @@ public class institutionServiceImpl implements institutionservice {
     JwtTokenUtil jwtTokenUtil;
     @Autowired
     permissionRepository permissionRepository;
+    @Autowired
+    ModelMapper modelMapper;
 
     private Logger logger = LoggerFactory.getLogger(institutionServiceImpl.class);
 
@@ -69,8 +70,9 @@ public class institutionServiceImpl implements institutionservice {
     }
 
     @Override
-    public Institution getinstitutionbyid(Long id) {
-        return institutionRepository.findById(id).get();
+    public Institution getinstitutionbyid(String id) {
+        return institutionRepository.findByInstitutionID(id);
+
     }
 
     @Override
@@ -122,7 +124,8 @@ public class institutionServiceImpl implements institutionservice {
                 walletAccount walletAccount = walletAccountRepository.findByWalletNumber(institution1.getInstitutionID());
                 if (Objects.isNull(walletAccount)){
                     walletAccountdto walletAccountdto = new walletAccountdto();
-                    walletAccountdto.setFeePercentage(institution.getFeePercentage());
+                    Double fee = institution.getFeePercentage()/100;
+                    walletAccountdto.setFeePercentage(fee);
                     walletAccountdto.setInstitutionID(institutionID);
                     walletAccountdto.setMaximumCharge(institution.getMaximumCharge());
                     walletAccountdto.setMinimumCharge(institution.getMinimumCharge());
@@ -132,6 +135,7 @@ public class institutionServiceImpl implements institutionservice {
                 else {
                     logger.info("Wallet Account already Exists for {}",institution1.getInstitutionName());
                 }
+                institution1.setGlobalSetting(institution.getGlobalSettings());
                 return institutionRepository.save(institution1);
             }
         }
@@ -144,6 +148,42 @@ public class institutionServiceImpl implements institutionservice {
 
 
     }
+
+    @Override
+    public Institution editInstitution(String institutionID, InstitutionDTO institutionDTO) {
+        Institution institution = institutionRepository.findByInstitutionID(institutionID);
+        if (Objects.nonNull(institution)){
+            String tmsUserUsername = jwtTokenUtil.getUsernameFromToken(institutionDTO.getToken());
+            Permissions permissions = permissionRepository.findByName("GLOBAL_SETTINGS");
+            tmsUser User1 = userRepository.findByusername(tmsUserUsername);
+            if ((Objects.nonNull(User1))&&User1.getRole().getPermissions().contains(permissions)){
+                serviceProviders providers = serviceProviderRepo.findByProviderName(institutionDTO.getServiceProviderName());
+                if (Objects.isNull(providers)){
+                    logger.info("No service provider for {}",institutionDTO.getServiceProviderName());
+                }
+                institution.setInstitutionName(institutionDTO.getInstitutionName());
+                institution.setInstitutionEmail(institutionDTO.getInstitutionEmail());
+                institution.setInstitutionPhone(institutionDTO.getInstitutionPhone());
+                institution.setSettlementAccount(institutionDTO.getSettlementAccount());
+                institution.setServiceProviders(providers);
+                institution.setBank(institutionDTO.getBank());
+                institution.setInstitutionURL(institutionDTO.getInstitutionURL());
+                institution.setInstitutionAppKey(institutionDTO.getInstitutionAppKey());
+                institution.setInstitutionIntegrationVersion(institutionDTO.getInstitutionIntegrationVersion());
+                institution.setGlobalSetting(institutionDTO.getGlobalSettings());
+                institutionRepository.save(institution);
+                return institution;
+            }else {
+                logger.info("Permission not available for User");
+                return null;
+            }
+        }
+        else {
+            logger.info("Institution not found for {}", institutionID);
+            return null;
+        }
+    }
+
     //method for creating an institution as a user on the tms
     private void institutionUserCreation(@RequestBody Institution institution) {
         Roles role = rolesRepository.findByName("ADMIN");
@@ -175,10 +215,6 @@ public class institutionServiceImpl implements institutionservice {
 
     }
 
-    @Override
-    public Institution editInstitution(Institution institution) {
-        return institutionRepository.save(institution);
-    }
 
     @Override
     public InstitutionListDTO getPagenatedInstitutions(PagedRequestDTO pagedRequestDTO) {
@@ -204,5 +240,6 @@ public class institutionServiceImpl implements institutionservice {
 
         return institutionListDTO;
     }
+
 
 }

@@ -1,8 +1,13 @@
 package com.jayrush.springmvcrest.rolesPermissions.services;
 
+import com.jayrush.springmvcrest.Repositories.UserRepository;
+import com.jayrush.springmvcrest.domain.tmsUser;
+import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
 import com.jayrush.springmvcrest.rolesPermissions.dtos.rolesDto;
 import com.jayrush.springmvcrest.rolesPermissions.models.Roles;
 import com.jayrush.springmvcrest.rolesPermissions.repositories.rolesRepository;
+import com.jayrush.springmvcrest.slf4j.Logger;
+import com.jayrush.springmvcrest.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +22,12 @@ import java.util.Objects;
 public class roleServiceImpl implements roleService {
     @Autowired
     rolesRepository rolesRepository;
+    @Autowired
+    JwtTokenUtil jwtTokenUtil;
+    @Autowired
+    UserRepository userRepository;
 
+    private static final Logger logger = LoggerFactory.getLogger(roleServiceImpl.class);
     @Override
     public Roles addRoles(rolesDto rolesDto) {
         Roles roles = new Roles();
@@ -55,5 +65,24 @@ public class roleServiceImpl implements roleService {
             return "Successfully Deleted";
         }
         return "Delete unsuccessful";
+    }
+
+    @Override
+    public List<Roles> getAllRolesByInstitutionID(String token) {
+        String username = jwtTokenUtil.getUsernameFromToken(token);
+        if (username == null) {
+            logger.info("Invalid token:: User not found");
+            return null;
+        }
+        else {
+            tmsUser User = userRepository.findByusername(username);
+            if (Objects.nonNull(User)){
+                return rolesRepository.findByInstitution_InstitutionID(User.getInstitution().getInstitutionID());
+            }else{
+                logger.info("User not found");
+                return null;
+            }
+        }
+
     }
 }

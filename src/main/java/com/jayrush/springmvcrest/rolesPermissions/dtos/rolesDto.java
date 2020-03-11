@@ -1,5 +1,6 @@
 package com.jayrush.springmvcrest.rolesPermissions.dtos;
 
+import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.roleType;
 import com.jayrush.springmvcrest.rolesPermissions.models.Permissions;
 import lombok.Data;
@@ -17,7 +18,6 @@ public class rolesDto {
     private String name;
     private String email;
     private String description;
-    @Enumerated(value = EnumType.STRING)
-    private roleType userType;
     private Collection<Permissions> permissions;
+    private Institution institution;
 }

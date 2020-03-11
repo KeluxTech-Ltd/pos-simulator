@@ -55,6 +55,25 @@ public class rolePermissionController {
         }
     }
 
+    @PostMapping()
+    public ResponseEntity<?> getAllRolesByInstitutionID(String token){
+        try {
+            Response response = new Response();
+            List<Roles> roles = roleService.getAllRolesByInstitutionID(token);
+            response.setRespCode(SUCCESS_CODE);
+            response.setRespDescription(SUCCESS);
+            response.setRespBody(roles);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.info(e.getMessage());
+            Response response = new Response();
+            response.setRespCode(FAILED_CODE);
+            response.setRespDescription(FAILED);
+            response.setRespBody(null);
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        }
+    }
+
     @PostMapping("/addRoles")
     public ResponseEntity<?> addRoles(@RequestBody rolesDto rolesDto){
         try {

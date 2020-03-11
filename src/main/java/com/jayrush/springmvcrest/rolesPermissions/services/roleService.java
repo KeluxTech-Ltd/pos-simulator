@@ -13,4 +13,6 @@ public interface roleService {
     List<Roles> getAllRoles();
     Roles editRoles(Roles rolesDto);
     String deleteRoles(Roles rolesDto);
+
+    List<Roles> getAllRolesByInstitutionID(String token);
 }

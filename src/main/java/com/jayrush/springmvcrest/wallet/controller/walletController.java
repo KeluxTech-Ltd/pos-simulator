@@ -31,25 +31,25 @@ public class walletController {
     @Autowired
     walletServices walletServices;
 
-    @PostMapping("/createWallet")
-    public ResponseEntity<?> CreateWallet(@RequestBody walletAccountdto walletAccountdto){
-        try {
-            Response response = new Response();
-            walletAccount walletAccount =  walletServices.createWalletAccount(walletAccountdto);
-            response.setRespCode(RESP_CODE);
-            response.setRespDescription(SUCCESS);
-            response.setRespBody(walletAccount);
-            return new ResponseEntity<>(response, HttpStatus.OK);
-        } catch (Exception e) {
-            logger.info(e.getMessage());
-            Response response = new Response();
-            response.setRespCode(RESP_CODE1);
-            response.setRespDescription(FAILED);
-            response.setRespBody(null);
-            return new ResponseEntity<>(response,HttpStatus.OK);
-        }
-
-    }
+//    @PostMapping("/createWallet")
+//    public ResponseEntity<?> CreateWallet(@RequestBody walletAccountdto walletAccountdto){
+//        try {
+//            Response response = new Response();
+//            walletAccount walletAccount =  walletServices.createWalletAccount(walletAccountdto);
+//            response.setRespCode(RESP_CODE);
+//            response.setRespDescription(SUCCESS);
+//            response.setRespBody(walletAccount);
+//            return new ResponseEntity<>(response, HttpStatus.OK);
+//        } catch (Exception e) {
+//            logger.info(e.getMessage());
+//            Response response = new Response();
+//            response.setRespCode(RESP_CODE1);
+//            response.setRespDescription(FAILED);
+//            response.setRespBody(null);
+//            return new ResponseEntity<>(response,HttpStatus.OK);
+//        }
+//
+//    }
 
     @GetMapping("/getWallets")
     public ResponseEntity<?> GetWallets(){
@@ -71,8 +71,8 @@ public class walletController {
 
     }
 
-    @PostMapping("/getWalletbyWalletNumber")
-    public ResponseEntity<?> GetWalletByWalletNumber(@RequestBody String walletNumber){
+    @GetMapping("/{walletNumber}")
+    public ResponseEntity<?> GetWalletByWalletNumber(@PathVariable String walletNumber){
         try {
             Response response = new Response();
             walletAccount walletAccount =  walletServices.getWalletAccountByWalletNumber(walletNumber);
@@ -92,7 +92,7 @@ public class walletController {
     }
 
     @PostMapping("/updateWalletAccount")
-    public ResponseEntity<?> GetWalletByWalletNumber(@RequestBody walletAccountdto walletNumber){
+    public ResponseEntity<?> updateWalletAccount(@RequestBody walletAccountdto walletNumber){
         try {
             Response response = new Response();
             walletAccount walletAccount =  walletServices.updateWalletAccount(walletNumber);

@@ -1,11 +1,9 @@
 package com.jayrush.springmvcrest.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.jayrush.springmvcrest.serviceProviders.Models.serviceProviders;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.util.List;
 
 @Data
 @Entity
@@ -31,6 +29,8 @@ public class Institution {
     private String institutionURL;
     private String institutionAppKey;
     private String institutionIntegrationVersion;
+
+    private Boolean globalSetting = false;
 
 
 

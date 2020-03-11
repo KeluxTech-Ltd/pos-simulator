@@ -3,10 +3,7 @@ package com.jayrush.springmvcrest.Server;
 import com.jayrush.springmvcrest.CreateSocketServer;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
 import com.jayrush.springmvcrest.Repositories.UserRepository;
-import com.jayrush.springmvcrest.Repositories.globalSettingsRepo;
 import com.jayrush.springmvcrest.Service.TransactionInterface;
-import com.jayrush.springmvcrest.domain.globalSettings;
-import com.jayrush.springmvcrest.domain.roleType;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import com.jayrush.springmvcrest.rolesPermissions.models.Permissions;
 import com.jayrush.springmvcrest.rolesPermissions.models.Roles;
@@ -26,7 +23,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import javax.management.relation.Role;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.util.*;
 
@@ -54,9 +50,6 @@ public class StartServer implements CommandLineRunner { //command line starter s
     rolesRepository rolesRepository;
 
     @Autowired
-    globalSettingsRepo globalSettingsRepo;
-
-    @Autowired
     profilesServiceRepo profilesServiceRepo;
 
     @Autowired
@@ -73,7 +66,6 @@ public class StartServer implements CommandLineRunner { //command line starter s
         Logger logger = LoggerFactory.getLogger(StartServer.class);
         rolesPermission();
         SuperAdminCheck();
-        GlobalSettingsCheck();
         ProvidersCheck();
         ThreeLineGlWalletAccount();
 
@@ -186,23 +178,6 @@ public class StartServer implements CommandLineRunner { //command line starter s
 
     }
 
-    private void GlobalSettingsCheck(){
-        List<globalSettings> globalSettings = globalSettingsRepo.findAll();
-
-        if (globalSettings.size()==0){
-            globalSettings globalSettings1 = new globalSettings();
-            globalSettings1.setSettings(false);
-            globalSettings1.setId(1L);
-            globalSettingsRepo.save(globalSettings1);
-        }
-        else {
-            logger.info("Global Settings already set");
-        }
-
-
-
-    }
-
     private void rolesPermission(){
         Roles role1 = rolesRepository.findByName("SUPER_ADMIN");
         if (Objects.isNull(role1)){
@@ -252,11 +227,33 @@ public class StartServer implements CommandLineRunner { //command line starter s
             permissionRepository.save(permissions8);
 
             Roles roles = new Roles();
+            Roles role2 = new Roles();
+            Roles role3 = new Roles();
             Collection<Permissions> permissionsCollection =permissionRepository.findAll();
             roles.setPermissions(permissionsCollection);
             roles.setDescription("Medusa SuperAdmin Role");
             roles.setName("SUPER_ADMIN");
+            roles.setInstitution(null);
             rolesRepository.save(roles);
+            Collection<Permissions> permissionsCollection2 =new ArrayList<>();
+            permissionsCollection2.add(permissions1);
+            permissionsCollection2.add(permissions2);
+            permissionsCollection2.add(permissions7);
+            role2.setPermissions(permissionsCollection2);
+            role2.setDescription("Medusa Admin Role");
+            role2.setName("ADMIN");
+            role2.setInstitution(null);
+            rolesRepository.save(role2);
+            Collection<Permissions> permissionsCollection3 =new ArrayList<>();
+            permissionsCollection3.add(permissions1);
+            permissionsCollection3.add(permissions2);
+            permissionsCollection3.add(permissions3);
+            permissionsCollection3.add(permissions7);
+            role3.setPermissions(permissionsCollection3);
+            role3.setDescription("Institution Admin Role");
+            role3.setName("INSTITUTION_ADMIN");
+            role3.setInstitution(null);
+            rolesRepository.save(role3);
         }
     }
 

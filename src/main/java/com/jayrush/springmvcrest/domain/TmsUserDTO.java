@@ -5,15 +5,9 @@ import com.jayrush.springmvcrest.rolesPermissions.models.Roles;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.util.Set;
 
-@Entity
 @Data
-public class tmsUser {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class TmsUserDTO {
     private String firstname;
 
     private String lastname;
@@ -22,11 +16,9 @@ public class tmsUser {
 
     private String datecreated;
 
-//    @JsonIgnore
     private String username;
-//    @JsonIgnore
-    private String password;
 
+    private String password;
 
     @OneToOne(cascade = {CascadeType.ALL})
     private Institution institution;

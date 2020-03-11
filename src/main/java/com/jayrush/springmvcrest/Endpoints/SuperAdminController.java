@@ -1,12 +1,11 @@
 package com.jayrush.springmvcrest.Endpoints;
 
-import com.jayrush.springmvcrest.Repositories.globalSettingsRepo;
+import com.jayrush.springmvcrest.Notification.institutionNotification;
 import com.jayrush.springmvcrest.Service.superAdminLoginService;
 import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.DeleteUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
-import com.jayrush.springmvcrest.domain.globalSettings;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import com.jayrush.springmvcrest.slf4j.Logger;
 import com.jayrush.springmvcrest.slf4j.LoggerFactory;
@@ -27,7 +26,7 @@ public class SuperAdminController {
     superAdminLoginService superAdminLoginService;
 
     @Autowired
-    globalSettingsRepo  globalSettingsRepo;
+    institutionNotification institutionNotification;
 
     @PostMapping("/login")
     public ResponseEntity<?> SuperAdminlogin (@RequestBody LoginDTO request)
@@ -206,48 +205,68 @@ public class SuperAdminController {
         }
 
     }
-    @PostMapping("/globalSettings")
-    public ResponseEntity<?> globalSettings(boolean request){
+//    @PostMapping("/globalSettings")
+//    public ResponseEntity<?> globalSettings(boolean request){
+//        try {
+//            Response response = new Response();
+//            response.setRespCode("00");
+//            response.setRespDescription("success");
+//            globalSettings globalSettings = globalSettingsRepo.getOne(1L);
+//            globalSettings.setSettings(request);
+//            if (request){
+//                response.setRespBody("Global settings ON");
+//            }
+//            else {
+//                response.setRespBody("Global settings OFF");
+//            }
+//            globalSettingsRepo.save(globalSettings);
+//            return new ResponseEntity<>(response,HttpStatus.OK);
+//        } catch (Exception e) {
+//            logger.info(e.getMessage());
+//            Response response = new Response();
+//            response.setRespCode("96");
+//            response.setRespDescription("Failed");
+//            response.setRespBody(null);
+//            return new ResponseEntity<>(response,HttpStatus.OK);
+//        }
+//
+//    }
+//
+//    @GetMapping("/getSetting")
+//    public ResponseEntity<?> getGlobalSettings(){
+//        try {
+//            Response response = new Response();
+//            response.setRespCode("00");
+//            response.setRespDescription("success");
+//            globalSettings globalSettings = globalSettingsRepo.getOne(1L);
+//            boolean value = globalSettings.isSettings();
+//            response.setRespBody(value);
+//            return new ResponseEntity<>(response,HttpStatus.OK);
+//        } catch (Exception e) {
+//            logger.info(e.getMessage());
+//            Response response = new Response();
+//            response.setRespCode("96");
+//            response.setRespDescription("Failed");
+//            response.setRespBody(null);
+//            return new ResponseEntity<>(response,HttpStatus.OK);
+//        }
+//
+//    }
+
+    @PostMapping("/downloadKey")
+    public ResponseEntity<?> downloadKey(@RequestBody String terminalID){
         try {
             Response response = new Response();
+            String result = institutionNotification.KeyExchangePerTID(terminalID);
             response.setRespCode("00");
             response.setRespDescription("success");
-            globalSettings globalSettings = globalSettingsRepo.getOne(1L);
-            globalSettings.setSettings(request);
-            if (request){
-                response.setRespBody("Global settings ON");
-            }
-            else {
-                response.setRespBody("Global settings OFF");
-            }
-            globalSettingsRepo.save(globalSettings);
+            response.setRespBody(result);
             return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
             logger.info(e.getMessage());
             Response response = new Response();
             response.setRespCode("96");
-            response.setRespDescription("Failed");
-            response.setRespBody(null);
-            return new ResponseEntity<>(response,HttpStatus.OK);
-        }
-
-    }
-
-    @GetMapping("/getSetting")
-    public ResponseEntity<?> getGlobalSettings(){
-        try {
-            Response response = new Response();
-            response.setRespCode("00");
-            response.setRespDescription("success");
-            globalSettings globalSettings = globalSettingsRepo.getOne(1L);
-            boolean value = globalSettings.isSettings();
-            response.setRespBody(value);
-            return new ResponseEntity<>(response,HttpStatus.OK);
-        } catch (Exception e) {
-            logger.info(e.getMessage());
-            Response response = new Response();
-            response.setRespCode("96");
-            response.setRespDescription("Failed");
+            response.setRespDescription("TerminalID Exist error");
             response.setRespBody(null);
             return new ResponseEntity<>(response,HttpStatus.OK);
         }

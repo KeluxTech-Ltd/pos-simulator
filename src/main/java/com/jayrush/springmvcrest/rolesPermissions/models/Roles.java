@@ -1,5 +1,6 @@
 package com.jayrush.springmvcrest.rolesPermissions.models;
 
+import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.roleType;
 import lombok.Data;
 import org.hibernate.annotations.Where;
@@ -24,6 +25,8 @@ public class Roles {
     @JoinColumn(name = "role_id", referencedColumnName = "id"), inverseJoinColumns =
     @JoinColumn(name = "permission_id", referencedColumnName = "id") )
     private Collection<Permissions> permissions;
+    @ManyToOne
+    private Institution institution;
 
 
 

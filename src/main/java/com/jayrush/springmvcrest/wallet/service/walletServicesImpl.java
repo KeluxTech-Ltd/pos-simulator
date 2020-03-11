@@ -1,7 +1,12 @@
 package com.jayrush.springmvcrest.wallet.service;
 
 import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
+import com.jayrush.springmvcrest.Repositories.UserRepository;
 import com.jayrush.springmvcrest.domain.Institution;
+import com.jayrush.springmvcrest.domain.tmsUser;
+import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
+import com.jayrush.springmvcrest.rolesPermissions.models.Permissions;
+import com.jayrush.springmvcrest.rolesPermissions.repositories.permissionRepository;
 import com.jayrush.springmvcrest.wallet.models.dtos.walletAccountdto;
 import com.jayrush.springmvcrest.wallet.models.walletAccount;
 import com.jayrush.springmvcrest.wallet.repository.walletAccountRepository;
@@ -24,6 +29,13 @@ public class walletServicesImpl implements walletServices {
     walletAccountRepository walletAccountRepository;
     @Autowired
     InstitutionRepository institutionRepository;
+    @Autowired
+    JwtTokenUtil jwtTokenUtil;
+    @Autowired
+    UserRepository userRepository;
+    @Autowired
+    permissionRepository permissionRepository;
+
 
     @Override
     public walletAccount createWalletAccount(walletAccountdto walletAccountdto) {
@@ -35,7 +47,7 @@ public class walletServicesImpl implements walletServices {
             walletAccount.setAvailableBalance(0.0);
             walletAccount.setLedgerBalance(0.0);
             walletAccount.setLastTranDate(date);
-            walletAccount.setPurpose("Institution Wallet Account");
+//            walletAccount.setPurpose("Institution Wallet Account");
             walletAccount.setMinimumCharge(walletAccountdto.getMinimumCharge());
             walletAccount.setMinimumCharge(walletAccountdto.getMaximumCharge());
             walletAccount.setFeePercentage(walletAccountdto.getFeePercentage());
@@ -77,16 +89,33 @@ public class walletServicesImpl implements walletServices {
 
     @Override
     public walletAccount updateWalletAccount(walletAccountdto walletAccountdto) {
-        walletAccount Account = walletAccountRepository.findByWalletNumber(walletAccountdto.getInstitutionID());
-        if (Objects.nonNull(Account)){
-            Account.setFeePercentage(walletAccountdto.getFeePercentage());
-            Account.setMinimumCharge(walletAccountdto.getMinimumCharge());
-            Account.setMaximumCharge(walletAccountdto.getMaximumCharge());
-            walletAccountRepository.save(Account);
-            return Account;
-        }
-        else {
+        String User = jwtTokenUtil.getUsernameFromToken(walletAccountdto.getToken());
+        tmsUser user = userRepository.findByusername(User);
+        Permissions permissions = permissionRepository.findByName("UPDATE_WALLET");
+        if (Objects.nonNull(user)){
+            if (Objects.nonNull(permissions)){
+                walletAccount Account = walletAccountRepository.findByWalletNumber(walletAccountdto.getInstitutionID());
+                if (Objects.nonNull(Account)){
+                    Double fee = walletAccountdto.getFeePercentage()/100;
+                    Account.setFeePercentage(fee);
+                    Account.setMinimumCharge(walletAccountdto.getMinimumCharge());
+                    Account.setMaximumCharge(walletAccountdto.getMaximumCharge());
+                    walletAccountRepository.save(Account);
+                    return Account;
+                }
+                else {
+                    logger.info("Wallet Account not found");
+                    return null;
+                }
+            }else {
+                logger.info("Update wallet permission not found");
+            }
+
+        }else {
+            logger.info("User not found");
             return null;
         }
+        return null;
+
     }
 }

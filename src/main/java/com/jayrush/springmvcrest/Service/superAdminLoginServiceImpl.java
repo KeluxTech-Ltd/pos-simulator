@@ -7,7 +7,6 @@ import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.DeleteUser;
 import com.jayrush.springmvcrest.domain.domainDTO.LoginDTO;
-import com.jayrush.springmvcrest.domain.domainDTO.tmsUserDTO;
 import com.jayrush.springmvcrest.domain.tmsUser;
 import com.jayrush.springmvcrest.exceptions.tmsExceptions;
 import com.jayrush.springmvcrest.jwt.JwtTokenUtil;
@@ -19,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Service
@@ -89,24 +87,22 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
 
     @Override
     public tmsUser superAdminCreateUsers(tmsUser tmsUser) {
-        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-        String date = simpleDateFormat.format(new Date());
+        Date date= new Date();
         String tmsUserUsername = jwtTokenUtil.getUsernameFromToken(tmsUser.getToken());
         Permissions permissions = permissionRepository.findByName("CREATE_USER");
 
-
         tmsUser User = userRepository.findByusername(tmsUserUsername);
-
+        Institution institution = institutionRepository.findById(tmsUser.getInstitution().getId()).get();
         if ((Objects.nonNull(User)) && User.getRole().getPermissions().contains(permissions)){
             tmsUser user = userRepository.findByFirstnameAndEmail(tmsUser.getFirstname(),tmsUser.getEmail());
             if (Objects.isNull(user)){
                 tmsUser.setUsername(tmsUser.getEmail());
-
+                tmsUser.setInstitution(institution);
                 Map<String, Object> params = new HashMap<>();
                 params.put("institutionName", tmsUser.getInstitution().getInstitutionName());
                 params.put("username", tmsUser.getEmail());
                 params.put("password", tmsUser.getPassword());
-                tmsUser.setDatecreated(date);
+                tmsUser.setDatecreated(date.toString());
                 tmsUser.setPassword(passwordEncoder.encode(tmsUser.getPassword()));
                 try {
                     mailService.sendMail("Medusa User Creation",tmsUser.getEmail(),null,params,"user_template",tmsUser.getInstitution().getInstitutionID());
@@ -116,7 +112,6 @@ public class superAdminLoginServiceImpl implements superAdminLoginService {
                 return userRepository.save(tmsUser);
             }
         }
-
 
         return tmsUser;
     }

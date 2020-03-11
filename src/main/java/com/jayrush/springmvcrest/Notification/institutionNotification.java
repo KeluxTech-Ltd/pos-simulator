@@ -14,6 +14,7 @@ import org.apache.commons.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,6 @@ import java.util.Objects;
 @Component
 public class institutionNotification {
     private static final Logger logger = LoggerFactory.getLogger(institutionNotification.class);
-
     @Autowired
     TransactionInterface transactionInterface;
 
@@ -58,7 +58,7 @@ public class institutionNotification {
     @Autowired
     MedusaNotification freedomSync;
 
-//    @Scheduled(fixedDelay = 20000)
+    @Scheduled(fixedDelay = 20000)
     @Transactional
     public void notifyInstitution(){
         logger.info("Starting transaction notification to Institution");
@@ -113,7 +113,8 @@ public class institutionNotification {
         }
     }
 
-    @Scheduled(fixedDelay = 86400000)
+    @Scheduled(cron = "0 1 1 * * *")
+//    @Scheduled(fixedDelay = 86400000)
     public void start(){
 
         Socket s = null;
@@ -121,16 +122,54 @@ public class institutionNotification {
         DataOutputStream dos = null;
         ClientHandler clientHandler = new ClientHandler(s, dis,dos);
         List<Terminals> terminalsList = terminalRepository.findAll();
-        for (int i = 0; i<terminalsList.size(); i++){
+        for (int i = 0; i<terminalsList.size(); i++)
+        {
             terminalKeyManagement key = clientHandler.keyManagement(terminalsList.get(i));
-            key.setId(terminalsList.get(i).getId());
-            terminalKeysRepo.save(key);
+            terminalKeyManagement terminalKeyManagement = terminalKeysRepo.findByTerminalID(key.getTerminalID());
+            if (Objects.nonNull(terminalKeyManagement)){
+                terminalKeyManagement.setParameterDownloaded(key.getParameterDownloaded());
+                terminalKeyManagement.setMasterKey(key.getMasterKey());
+                terminalKeyManagement.setSessionKey(key.getSessionKey());
+                terminalKeyManagement.setPinKey(key.getPinKey());
+                terminalKeyManagement.setLastExchangeDateTime(key.getLastExchangeDateTime());
+                terminalKeysRepo.save(terminalKeyManagement);
+            }else {
+                terminalKeysRepo.save(key);
+            }
         }
 
     }
 
-    //todo push getkeys per terminalID
+    public String KeyExchangePerTID(String TerminalID){
+        Socket s = null;
+        DataInputStream dis = null;
+        DataOutputStream dos = null;
+        ClientHandler clientHandler = new ClientHandler(s, dis,dos);
 
+        Terminals terminal = terminalRepository.findByterminalID(TerminalID);
+        if (Objects.nonNull(terminal)){
+            terminalKeyManagement key = clientHandler.keyManagement(terminal);
+            terminalKeyManagement terminalKey = terminalKeysRepo.findByTerminalID(TerminalID);
+            if (Objects.nonNull(terminalKey)){
+
+                terminalKey.setParameterDownloaded(key.getParameterDownloaded());
+                terminalKey.setMasterKey(key.getMasterKey());
+                terminalKey.setSessionKey(key.getSessionKey());
+                terminalKey.setPinKey(key.getPinKey());
+                terminalKey.setLastExchangeDateTime(key.getLastExchangeDateTime());
+                terminalKeysRepo.save(terminalKey);
+
+            }
+            else {
+                terminalKeysRepo.save(key);
+            }
+            return "Key Exchange Successful";
+        }
+        else {
+            logger.info("Terminal Id exist Error");
+            return "Terminal Id exist Error";
+        }
+    }
 
 
 }

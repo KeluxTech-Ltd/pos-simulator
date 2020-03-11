@@ -30,6 +30,8 @@ public class MailServiceImpl implements MailService {
 
     @Value("${mail.from}")
     private String mailFrom;
+    @Value("${mail.name}")
+    private String mailName;
 
     @Autowired
     private MailRepository mailRepository;
@@ -70,7 +72,7 @@ public class MailServiceImpl implements MailService {
                 logger.info("Sending mail to ->{}", mail.getMailTo());
                 MimeMessagePreparator messagePreparator = mimeMessage -> {
                     MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage);
-                    messageHelper.setFrom(mailFrom);
+                    messageHelper.setFrom(mailFrom,mailName);
                     messageHelper.setTo(mailTo);
                     messageHelper.setSubject(mailSubject);
                     messageHelper.setText(mail.getMailContent(), true);

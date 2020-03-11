@@ -7,15 +7,18 @@ import com.jayrush.springmvcrest.Nibss.network.ChannelSocketRequestManager;
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
 import com.jayrush.springmvcrest.Nibss.repository.DataStore;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
-import com.jayrush.springmvcrest.Repositories.*;
+import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
+import com.jayrush.springmvcrest.Repositories.TerminalRepository;
+import com.jayrush.springmvcrest.Repositories.TransactionRepository;
+import com.jayrush.springmvcrest.Repositories.terminalKeysRepo;
 import com.jayrush.springmvcrest.Service.email.service.MailService;
 import com.jayrush.springmvcrest.Service.nibssToIswInterface;
+import com.jayrush.springmvcrest.domain.Institution;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.Terminals;
 import com.jayrush.springmvcrest.domain.domainDTO.Response;
 import com.jayrush.springmvcrest.domain.domainDTO.host;
 import com.jayrush.springmvcrest.domain.domainDTO.keys;
-import com.jayrush.springmvcrest.domain.globalSettings;
 import com.jayrush.springmvcrest.domain.terminalKeyManagement;
 import com.jayrush.springmvcrest.fep.ISWprocessor;
 import com.jayrush.springmvcrest.fep.RequestProcessingException;
@@ -45,7 +48,6 @@ import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Objects;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.generateHash256Value;
@@ -86,14 +88,17 @@ public class ClientHandler extends Thread {
     MailService mailService;
 
     @Autowired
-    nibssToIswInterface nibssToIswInterface;
+    InstitutionRepository institutionRepository;
 
     @Autowired
-    globalSettingsRepo globalSettingsRepo;
+    nibssToIswInterface nibssToIswInterface;
+
     @Value("${interswitch-key}")
     String iswPinkey;
     @Value("${tms-key}")
     String tmsKey;
+    @Value("${tms-minimum-amount}")
+    int minimumAmount;
 
     @Autowired
     com.jayrush.springmvcrest.wallet.repository.storedProcedureRepository storedProcedureRepository;
@@ -113,7 +118,6 @@ public class ClientHandler extends Thread {
         try {
 //            getKeysforTerminalID("2101CX82");
             //check global settings
-            boolean globalSettingsON = isGlobalSettingsON();
             logger.info("AWaiting data------------------------------------------");
             final byte[] lenBytes = new byte[2];
             dis.readFully(lenBytes);
@@ -133,7 +137,7 @@ public class ClientHandler extends Thread {
             //check if amount is less than N15
             double amount = Double.parseDouble(request.getAmount());
             logger.info("transaction Amount is {} ",amount);
-            if (amount<15){
+            if (amount<minimumAmount){
                 logger.info("Amount less than N100");
                 IsoMessage transactionResponse = toISo(resp);
                 ISWprocessor processor = new ISWprocessor();
@@ -145,13 +149,14 @@ public class ClientHandler extends Thread {
             }
             else {
                 Terminals terminals = terminalRepository.findByterminalID(request.getTerminalID());
-                if (Objects.isNull(terminals))
+                Institution institution = institutionRepository.findByInstitutionID(terminals.getInstitution().getInstitutionID());
+                if (Objects.isNull(terminals)||(Objects.isNull(institution)))
                 {
-                    logger.info("Terminal ID is null");
+                    logger.info("Terminal ID is null or Institution Null ");
                 }
                 String profile;
                 //getting the profile setting to route transaction based on set profile for terminal ID
-                if (globalSettingsON){
+                if (institution.getGlobalSetting().equals(true)){
                     profile = "ISW";
                     host.setHostName("ISW");
                     host.setHostIp(iswIpAddress);
@@ -226,15 +231,7 @@ public class ClientHandler extends Thread {
         }
     }
 
-    private boolean isGlobalSettingsON() {
-        boolean globalSettingsON = false;
-//        globalSettings globalSettings = globalSettingsRepo.findById(Long.valueOf(1)).get();
-        List<globalSettings> globalSettings = globalSettingsRepo.findAll();
-        if (Objects.nonNull(globalSettings)&& globalSettings.get(0).isSettings()){//use ISW if true
-            globalSettingsON = true;
-        }
-        return globalSettingsON;
-    }
+
 
     private byte[] translatePin(byte[] resp, String profile) throws IOException, CryptoException {
         IsoMessage msg = toISo(resp);
@@ -390,9 +387,10 @@ public class ClientHandler extends Thread {
 
             //send transaction to Processor
             if (host.getHostName().equals("ISW")) {
+
                 responseObject = socketRequester.toISW(messagePayload, host);
                 modelMapper.map(responseObject.getResponseMsg(), transactions);
-                transactions.setProcessedBy(host.getHostName());
+                transactions.setProcessedBy("INTERSWITCH");
             }
             else {
                 responseObject = socketRequester.toNIBSS(messagePayload);
@@ -400,16 +398,15 @@ public class ClientHandler extends Thread {
                 transactions.setProcessedBy("NIBSS");
             }
 
-//            modelMapper.map(responseObject.getResponseMsg(), transactions);
             //save transaction response to db if response was gotten
             //todo push key exchange for transaction
-            if (transactions.getResponseCode().equals("96")){
+            if ((transactions.getResponseCode().equals("96"))&& transactions.getProcessedBy().equals("NIBSS")){
                 getKeysforTerminalID(transactions.getTerminalID());
             }
             transaction(transactions);
 
             return responseObject.getResponseByte();
-        } catch (IOException e) {
+        } catch (IOException | RequestProcessingException e) {
             if (mti.equals("0200")) {
                 TerminalTransactions transaction = transactionRepository.findByrrnAndId(request.getRrn(), request.getId());
                 transaction.setDateCreated(Date);
@@ -421,7 +418,7 @@ public class ClientHandler extends Thread {
             }
             logger.info("Error ", e);
             return null;
-        } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException| ParseException | ISOException e) {
+        } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException| ParseException e) {
             logger.info(e.toString());
             return null;
 

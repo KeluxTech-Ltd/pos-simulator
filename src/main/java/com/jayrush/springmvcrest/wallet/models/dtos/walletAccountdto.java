@@ -15,5 +15,6 @@ public class walletAccountdto {
     private Double minimumCharge;
     private Double maximumCharge;
     private Double feePercentage;
+    private String token;
 
 }

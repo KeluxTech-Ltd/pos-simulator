@@ -10,8 +10,9 @@ import java.util.List;
 
 public interface institutionservice {
     List<Institution> getAllInstitution();
-    Institution getinstitutionbyid(Long id);
+    Institution getinstitutionbyid(String id);
     Institution registerInstitution(InstitutionDTO institution);
-    Institution editInstitution(Institution institution);
+    Institution editInstitution(String institutionID, InstitutionDTO institutionDTO);
     InstitutionListDTO getPagenatedInstitutions(PagedRequestDTO pagedTerminalsDTO);
+
 }

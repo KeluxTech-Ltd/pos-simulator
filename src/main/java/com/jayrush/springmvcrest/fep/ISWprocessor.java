@@ -104,9 +104,9 @@ public class ISWprocessor {
                 isoMsg.set(15,ISODate.getDate(now));
                 isoMsg.set(18,"6010");
                 isoMsg.set(33,"013622");
-                isoMsg.set(98, "6600002751|WDL|45:45:10:5");//identifying the payee (recipient) of a payment transaction //can be dummy data
-                isoMsg.set(100, "639138");//A code identifying the financial institution that should receive a request or advice
-                isoMsg.set(103, "6600002751");//When used in payment transactions, this field specifies the bank account number of the payee
+                isoMsg.set(98, "0000000000|WDL|45:45:10:5");//identifying the payee (recipient) of a payment transaction //can be dummy data
+//                isoMsg.set(100, "506146");//A code identifying the financial institution that should receive a request or advice
+//                isoMsg.set(103, "6900326912");//When used in payment transactions, this field specifies the bank account number of the payee
 //                isoMsg.set(111, "42VWY37");//custom
                 isoMsg.set(113, "");//custom
                 isoMsg.set("127.0", "");

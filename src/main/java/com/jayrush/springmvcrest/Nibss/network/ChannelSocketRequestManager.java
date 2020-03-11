@@ -113,7 +113,7 @@ public class ChannelSocketRequestManager
 
     public Response toNIBSS(final byte[] Message) throws IOException, ParseException {
         if (this.socket.isConnected()) {
-            this.socket.setSoTimeout(180000);
+            this.socket.setSoTimeout(120000);
             Response responseObj = new Response();
             final DataOutputStream Out = new DataOutputStream(this.socket.getOutputStream());
             final DataInputStream In = new DataInputStream(this.socket.getInputStream());
@@ -161,49 +161,38 @@ public class ChannelSocketRequestManager
         }
     }
 
-    public Response toISW(final byte[] Message, host host) throws IOException, ISOException {
-        if (this.socket.isConnected()) {
-            Response responseObj = new Response();
-            ISWprocessor processor = new ISWprocessor();
-            //todo what is being sent to fep
-            String messagesent = bytesToHex(Message);
-            Socket socketconn = new Socket();
-            try {
-//                socketconn.connect(new InetSocketAddress("10.2.2.65", 7003));
-                socketconn.connect(new InetSocketAddress(host.getHostIp(), host.getHostPort()));
-                socketconn.setSoTimeout(180000);
-                if (!socketconn.isConnected()) {
-                    logger.info("Connection not connected");
-                }
-                else {
-                    socketconn.getOutputStream().write(Message);
-                    final byte[] lenBytes = new byte[2];
-                    socketconn.getInputStream().read(lenBytes);
-                    final int contentLength = DataUtil.bytesToShort(lenBytes);
-                    final byte[] resp = new byte[contentLength];
-                    socketconn.getInputStream().read(resp);
+    public Response toISW(final byte[] Message, host host) throws IOException, ParseException, RequestProcessingException {
+//        this.socket.close();//todo remove might throw exception
+        Response responseObj = new Response();
+        ISWprocessor processor = new ISWprocessor();
 
-                    //ascii response message console log
-                    asciiResponseMessage(resp);
+        Socket socketconn = new Socket();
+        socketconn.connect(new InetSocketAddress(host.getHostIp(), host.getHostPort()));
+        socketconn.setSoTimeout(60000);
+        if (socketconn.isConnected()) {
+            logger.info("Connection connected");
 
-                    byte []tonibssresponse = processor.toPOS(resp);
+            socketconn.getOutputStream().write(Message);
+            final byte[] lenBytes = new byte[2];
+            socketconn.getInputStream().read(lenBytes);
+            final int contentLength = DataUtil.bytesToShort(lenBytes);
+            final byte[] resp = new byte[contentLength];
+            socketconn.getInputStream().read(resp);
 
-                    final short len = (short)tonibssresponse.length;
-                    final byte[] headBytes = DataUtil.shortToBytes(len);
-                    final byte[] response = concat(headBytes, tonibssresponse);
+            //ascii response message console log
+            asciiResponseMessage(resp);
 
-                    final TerminalTransactions msg = parseResponse(tonibssresponse);
+            byte []tonibssresponse = processor.toPOS(resp);
 
-                    responseObj.setResponseByte(response);
-                    responseObj.setResponseMsg(msg);
-                    return responseObj;
-                }
-            } catch (Exception e) {
-                logger.info(e.getMessage());
-            }finally {
-                socketconn.close();
-            }
+            final short len = (short)tonibssresponse.length;
+            final byte[] headBytes = DataUtil.shortToBytes(len);
+            final byte[] response = concat(headBytes, tonibssresponse);
 
+            final TerminalTransactions msg = parseResponse(tonibssresponse);
+
+            responseObj.setResponseByte(response);
+            responseObj.setResponseMsg(msg);
+            return responseObj;
         }
         throw new IOException("Socket not connected");
     }

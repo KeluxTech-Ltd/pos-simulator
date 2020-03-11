@@ -45,11 +45,11 @@ public class DashboardController {
     dashboardInterface dashboardInterface;
 
 
-    @GetMapping("DashboardUtilities")
-    public ResponseEntity<?> DashboardUtilities(){
+    @PostMapping("/DashboardUtilities")
+    public ResponseEntity<?> DashboardUtilities(@RequestBody String token){
         try{
             Response response = new Response();
-            DashboardUtils dashboardUtils = dashboardInterface.getDashboardUtils();
+            DashboardUtils dashboardUtils = dashboardInterface.getDashboardUtils(token);
             response.setRespBody(dashboardUtils);
             response.setRespCode(RESP_CODE);
             response.setRespDescription(SUCCESS);
