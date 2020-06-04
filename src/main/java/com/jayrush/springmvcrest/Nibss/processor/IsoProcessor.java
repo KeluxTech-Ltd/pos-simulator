@@ -621,7 +621,7 @@ public class IsoProcessor
             final IsoValue<String> field25 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getAdditionalAmountsField54());
             final IsoValue<String> field26 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getMessageReasonCodeField56());
             final IsoValue<String> field27 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getTransportDataField59());
-            final IsoValue<String> field28 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getPaymentInformationField60());
+//            final IsoValue<String> field28 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getPaymentInformationField60());
             final IsoValue<String> field29 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getOriginalDataElementsField90(), 42);
             final IsoValue<String> field30 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getReplacementAmountsField95(), 42);
             final IsoValue<String> field31 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getPOSDataCodeField123());
@@ -660,7 +660,7 @@ public class IsoProcessor
             if (reversalRequest.getTransportDataField59() != null) {
                 isoMessage.setField(59, (IsoValue)field27);
             }
-            isoMessage.setField(60, (IsoValue)field28);
+//            isoMessage.setField(60, (IsoValue)field28);
             isoMessage.setField(90, (IsoValue)field29);
             isoMessage.setField(95, (IsoValue)field30);
             isoMessage.setField(123, (IsoValue)field31);

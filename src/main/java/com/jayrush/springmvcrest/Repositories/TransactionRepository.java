@@ -17,7 +17,7 @@ public interface TransactionRepository extends JpaRepository<TerminalTransaction
 
     TerminalTransactions findByrrnAndTerminalID(String rrn, String tid);
 
-    TerminalTransactions findByrrnAndId(String rrn, Long id);
+    TerminalTransactions findByTerminalIDAndRequestDateTimeAndTime(String terminalId, String requestDateTime,String time);
 
     List<TerminalTransactions> findByinstitutionIDIgnoreCaseOrderByDate(String institutionID);
 

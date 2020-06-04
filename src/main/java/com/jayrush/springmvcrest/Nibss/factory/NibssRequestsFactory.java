@@ -299,7 +299,65 @@ public class NibssRequestsFactory
             return new ReversalResponse();
         }
     }
-    
+
+    public static void main(String...args){
+        ISO8583TransactionResponse response = testReversal();
+        System.out.println(response);
+    }
+    public static ISO8583TransactionResponse testReversal() {
+        try {
+            final ISO8583TransactionRequest reversalRequest = new ReversalRequest();
+            reversalRequest.setPanField2("1234567890123456789");
+            reversalRequest.setProcessingCodeField3("001000");
+            reversalRequest.setTransactionAmountField4("000000002000");
+            reversalRequest.setTransmissionDateTimeField7(DataUtil.transmissionDateAndTime(new Date()));
+            reversalRequest.setStanField11("000055");
+            reversalRequest.setLocalTransactionTimeField12(DataUtil.timeLocalTransaction(new Date()));
+            reversalRequest.setLocalTransactionDateField13(DataUtil.dateLocalTransaction(new Date()));
+            reversalRequest.setCardExpirationDateField14("2204");
+            reversalRequest.setMerchantTypeField18("5411");
+            reversalRequest.setPosEntryModeField22("051");
+            reversalRequest.setCardSequenceNumberField23("000");
+            reversalRequest.setPosConditionCodeField25("00");
+            reversalRequest.setPosPinCaptureCodeField26("04");
+            reversalRequest.setTransactionFeeAmountField28("D00000000");
+            reversalRequest.setAcquiringInstitutionIdCodeField32("044");
+            reversalRequest.setTrack2DataField35("6395875596000652849D22046011547494800");
+            final String retrievalRefNumber = String.format("%012d", 1);
+            reversalRequest.setRetrievalReferenceNumberField37(retrievalRefNumber);
+            reversalRequest.setServiceRestrictionCodeField40("601");
+            reversalRequest.setTerminalIdField41("2101CX82");
+            reversalRequest.setCardAcceptorIdCodeField42("2101LA00000AH48");
+            reversalRequest.setCardAcceptorNameOrLocationField43("159018204469@2101FM33FreedomNetwork LANG");
+            reversalRequest.setTransactionCurrencyCodeField49("566");
+            reversalRequest.setPinDataField52("04477d69fff9ad7b");
+            reversalRequest.setAdditionalAmountsField54("001000C000000002000");
+            reversalRequest.setMessageReasonCodeField56("4021");
+            reversalRequest.setTransportDataField59("0");
+//            reversalRequest.setPaymentInformationField60(transactionRequest.getPaymentInformationField60());
+            final String originalDataElements = "0200" + "000055" + DataUtil.transmissionDateAndTime(new Date()) + StringUtils.padRight("044", 11, '0') + StringUtils.padRight("5112", 11, '0');
+            reversalRequest.setOriginalDataElementsField90(originalDataElements);
+            final String replacementAmounts = DataUtil.formatAmount("000000002000") + DataUtil.formatAmount("0") + "C00000000C00000000";
+            reversalRequest.setReplacementAmountsField95(replacementAmounts);
+            reversalRequest.setPOSDataCodeField123("511101512344101");
+            final byte[] sessionKey = StringUtils.hexStringToByteArray("2A4604835715232A017062F751C710C8");
+            final String nibssIpPAddress = "41.219.149.51";
+            final int nibssPort = 5336;
+            IsoProcessor.setConnectionParameters(nibssIpPAddress, nibssPort);
+            ISO8583TransactionResponse reversalResponse = IsoProcessor.process((ReversalRequest)reversalRequest, sessionKey, 1);
+            for (int index = 2; index <= 3; ++index) {
+                reversalResponse = IsoProcessor.process((ReversalRequest)reversalRequest, sessionKey, index);
+                if (reversalResponse.getResponseCodeField39() != null && reversalResponse.getResponseCodeField39().equals("00")) {
+                    return reversalResponse;
+                }
+            }
+            return reversalResponse;
+        }
+        catch (Exception ex) {
+            return new ReversalResponse();
+        }
+    }
+
     public ReversalResponse sendReversal(final ReversalRequest reversalRequest, final _0200Response financialResponse) {
         try {
             reversalRequest.setProcessingCodeField3(financialResponse.getProcessingCodeField3());

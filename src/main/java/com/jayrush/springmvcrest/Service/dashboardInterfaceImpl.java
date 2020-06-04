@@ -97,9 +97,9 @@ public class dashboardInterfaceImpl implements dashboardInterface {
 
                 //active inactive
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy");
-                String today = simpleDateFormat.format(new Date());
+                String today = simpleDateFormat.format(new Date())+" 24:00:00";
 
-                String yesterday = getYesterdayDateString();
+                String yesterday = getYesterdayDateString()+" 00:00:01";
                 List<List<String>> activeTerminals = transactionRepository.findActiveTerminals(yesterday,today);
                 activeInactive activeInactive = new activeInactive();
                 activeInactive.setActiveTerminals(activeTerminals.get(0).get(0));
@@ -113,18 +113,17 @@ public class dashboardInterfaceImpl implements dashboardInterface {
 
                 dashboardUtils.setActiveInactiveTerminals(activeInactive);
 
-
                 //total Successful in the month
                 String lastmonth = getlastmonthDateString();
                 String lastMonth = getlastMonthDateString();
-                List<TerminalTransactions> successfulTransactions = transactionRepository.findByStatusAndDateCreatedBetween("Success",today,lastmonth);
+                List<TerminalTransactions> successfulTransactions = transactionRepository.findByStatusAndDateCreatedBetween("Success",yesterday,today);
                 dashboardUtils.setSuccess(successfulTransactions.size());
 
-                //failed transactions in the month
-                List<TerminalTransactions> failedTransactions = transactionRepository.findByStatusAndDateCreatedBetween("Failed",today,lastmonth);
+                //failed transactions in the day
+                List<TerminalTransactions> failedTransactions = transactionRepository.findByStatusAndDateCreatedBetween("Failed",yesterday,today);
                 dashboardUtils.setFailed(failedTransactions.size());
 
-                //total transactions in the month
+                //total transactions in the day
                 dashboardUtils.setTotalTransactions(successfulTransactions.size()+failedTransactions.size());
 
                 //successful Amount in the month
@@ -133,7 +132,7 @@ public class dashboardInterfaceImpl implements dashboardInterface {
 
                 String lastmonthDate = getlastmonthDateString2();
 
-                Double successfulAmount = transactionRepository.transactionAmount(lastMonth,now);
+                Double successfulAmount = transactionRepository.transactionAmount(yesterday,now);
                 dashboardUtils.setTotalSuccessfulAmount(successfulAmount);
                 return dashboardUtils;
             }

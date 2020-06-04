@@ -91,7 +91,7 @@ public class ISWprocessor {
             String asciiMessage = toAscii(fromPOSmessage);
             String mti = asciiMessage.substring(0,4);
             isoMsg.setMTI(mti);
-            if ("0200".equals(isoMsg.getMTI())) {
+            if ("0200".equals(isoMsg.getMTI()) ||  "0420".equals(isoMsg.getMTI())) {
                 isoMsg.unset(4);
                 String amount = responseMessage.getObjectValue(4).toString();
                 String formatedAmount = amount.replace(".","");

@@ -41,7 +41,7 @@ public class CreateSocketServer {
         while (true)
         {
             Socket socketInstance = new Socket();
-            socketInstance.setSoTimeout(120000);
+//            socketInstance.setSoTimeout(120000);
             try
             {
                 // socket object to receive incoming client requests

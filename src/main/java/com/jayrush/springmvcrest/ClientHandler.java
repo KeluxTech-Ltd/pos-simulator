@@ -115,12 +115,12 @@ public class ClientHandler extends Thread {
 
     @Override
     public void run() {
+        Long id = 1L;
         try {
-//            getKeysforTerminalID("2101CX82");
-            //check global settings
             logger.info("AWaiting data------------------------------------------");
             final byte[] lenBytes = new byte[2];
             dis.readFully(lenBytes);
+
             final int contentLength = DataUtil.bytesToShort(lenBytes);
             final byte[] resp = new byte[contentLength];
             dis.readFully(resp);
@@ -132,7 +132,7 @@ public class ClientHandler extends Thread {
             host host = new host();
 
             //to log the request message
-            final TerminalTransactions request = parseRequest(resp);
+            final TerminalTransactions request = parseRequest(resp, mti);
 
             //check if amount is less than N15
             double amount = Double.parseDouble(request.getAmount());
@@ -154,6 +154,7 @@ public class ClientHandler extends Thread {
                 {
                     logger.info("Terminal ID is null or Institution Null ");
                 }
+
                 String profile;
                 //getting the profile setting to route transaction based on set profile for terminal ID
                 if (institution.getGlobalSetting().equals(true)){
@@ -167,10 +168,8 @@ public class ClientHandler extends Thread {
                     host.setHostIp(terminals.getProfile().getProfileIP());
                     host.setHostPort(terminals.getProfile().getPort());
                 }
-
-
                 //to save only transaction messages to database on transaction initialization
-                if (mti.equals("0200")) {
+                if (mti.equals("0200")||mti.equals("0420")) {
                     SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
                     String date = simpleDateFormat1.format(new Date());
                     request.setInstitutionID(terminals.getInstitution().getInstitutionID());
@@ -178,9 +177,9 @@ public class ClientHandler extends Thread {
 
                     //masked pan
                     request.setPan(Utils.maskPanForReceipt(request.getPan()));
+                    id = request.getId();
                     transactionRepository.save(request);
                 }
-
                 //Host Switching based on profile setting gotten
                 switch (profile) {
                     case "ISW":
@@ -189,11 +188,9 @@ public class ClientHandler extends Thread {
                             byte[] translatedMsg = translatePin(resp, profile);
                             interswitchProfile(translatedMsg, host, request);
                         }
-//                    else if (mti.equals("0800")){
-//                        logger.info("Sign on Echo Message");
-//                        SignOnResponse(resp);
-//                    }
                         else {
+                            //other transaction types
+                            logger.info("Transaction is a {} transaction",mti);
                             interswitchProfile(resp, host, request);
                         }
                         break;
@@ -203,11 +200,9 @@ public class ClientHandler extends Thread {
                             byte[] translatedMsg = translatePin(resp, profile);
                             nibssProfile(translatedMsg, host, request);
                         }
-//                    else if (mti.equals("0800")){
-//                        logger.info("Sign on Echo Message");
-//                        SignOnResponse(resp);
-//                    }
                         else {
+                            //other transaction types
+                            logger.info("Transaction is a {} transaction",mti);
                             nibssProfile(resp, host, request);
                         }
                         break;
@@ -217,11 +212,25 @@ public class ClientHandler extends Thread {
                 }
             }
 
-
-
         } catch (IOException | ParseException | RequestProcessingException | ISOException | CryptoException e) {
-            logger.info(e.getMessage());
-
+            if (id.equals(1L)){
+                logger.info(e.getMessage());
+            }
+            else {
+                TerminalTransactions transactions = transactionRepository.findById(id).get();
+                if (Objects.nonNull(transactions)){
+                    transactions.setProcessedBy("NULL");
+                    transactions.setStatus("Failed");
+                    transactions.setResponseCode("-1");
+                    transactions.setResponseDesc(e.getMessage());
+                    transactions.setTranComplete(true);
+                    transactions.setProcessed(true);
+                    transactionRepository.save(transactions);
+                }
+                else {
+                    logger.info(e.getMessage());
+                }
+            }
         } finally {
             try {
                 dos.close();
@@ -329,6 +338,9 @@ public class ClientHandler extends Thread {
             case "0100":
                 logger.info("Authorization Message ( 0100 )---> {}", asciiMessage);
                 return mti;
+            case "0420":
+                logger.info("Reversal Message ( 0420 )---> {}", asciiMessage);
+                return mti;
             default:
                 return mti;
         }
@@ -407,15 +419,20 @@ public class ClientHandler extends Thread {
 
             return responseObject.getResponseByte();
         } catch (IOException | RequestProcessingException e) {
-            if (mti.equals("0200")) {
-                TerminalTransactions transaction = transactionRepository.findByrrnAndId(request.getRrn(), request.getId());
-                transaction.setDateCreated(Date);
-                transaction.setResponseDesc("Transaction Timed out");
-                transaction.setResponseCode("-1");
-                transaction.setTranComplete(true);
-                transaction.setStatus("Failed");
-                transactionRepository.save(transaction);
+            TerminalTransactions transaction = transactionRepository.findByTerminalIDAndRequestDateTimeAndTime(request.getTerminalID(), request.getRequestDateTime(), request.getTime());
+            transaction.setDateCreated(Date);
+            transaction.setResponseDesc("Transaction Timed out");
+            transaction.setResponseCode("-1");
+            transaction.setTranComplete(true);
+            transaction.setStatus("Failed");
+            String hostName = host.getHostName();
+            if (hostName.equals("ISW")){
+                transaction.setProcessedBy("INTERSWITCH");
             }
+            else
+                transaction.setProcessedBy("NIBSS");
+
+            transactionRepository.save(transaction);
             logger.info("Error ", e);
             return null;
         } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException| ParseException e) {
@@ -571,7 +588,7 @@ public class ClientHandler extends Thread {
         return output.toString();
     }
 
-    private TerminalTransactions parseRequest(final byte[] message) throws IOException {
+    private TerminalTransactions parseRequest(final byte[] message, String mti) throws IOException {
         final TerminalTransactions response = new TerminalTransactions();
         final IsoMessage isoMessage = null;
         final MessageFactory<IsoMessage> responseMessageFactory = (MessageFactory<IsoMessage>) new MessageFactory();
@@ -592,7 +609,7 @@ public class ClientHandler extends Thread {
         }
 
         if (responseMessage.hasField(4) && (responseMessage.hasField(37))) {
-            response.setMti("0200");
+            response.setMti(mti);
             if (responseMessage.hasField(2)) {
                 response.setPan(responseMessage.getObjectValue(2).toString());
             }

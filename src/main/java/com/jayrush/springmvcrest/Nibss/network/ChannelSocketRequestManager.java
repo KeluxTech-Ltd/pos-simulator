@@ -113,7 +113,7 @@ public class ChannelSocketRequestManager
 
     public Response toNIBSS(final byte[] Message) throws IOException, ParseException {
         if (this.socket.isConnected()) {
-            this.socket.setSoTimeout(120000);
+            this.socket.setSoTimeout(60000);
             Response responseObj = new Response();
             final DataOutputStream Out = new DataOutputStream(this.socket.getOutputStream());
             final DataInputStream In = new DataInputStream(this.socket.getInputStream());
@@ -131,15 +131,14 @@ public class ChannelSocketRequestManager
 
 
             //ascii response message console log
-            asciiResponseMessage(resp);
+            String mti = asciiResponseMessage(resp);
 
             final short len = (short)resp.length;
             final byte[] headBytes = DataUtil.shortToBytes(len);
             final byte[] response = concat(headBytes, resp);
 
             //to log the response message
-            final TerminalTransactions msg = parseResponse(resp);
-
+            final TerminalTransactions msg = parseResponse(resp,mti);
 
             responseObj.setResponseByte(response);
             responseObj.setResponseMsg(msg);
@@ -148,21 +147,29 @@ public class ChannelSocketRequestManager
         throw new IOException("Socket not connected");
     }
 
-    private void asciiResponseMessage(byte[] resp) {
+    private String asciiResponseMessage(byte[] resp) {
         final String s = new String(resp);
-        if (s.startsWith("0810")) {
-            logger.info("ISO Network Management ( 0810 )---> {}", s);
-        } else if (s.startsWith("0210")) {
-            logger.info("Transaction Message ( 0210 )---> {}", s);
-        } else if (s.startsWith("0110")) {
-            logger.info("Authorization Message ( 0110 )---> {}", s);
-        } else {
-            logger.info("Rersponse ---->{}", s);
+        String mti = s.substring(0,4);
+        switch (mti) {
+            case "0810":
+                logger.info("ISO Network Management ( 0810 )---> {}", s);
+                return mti;
+            case "0210":
+                logger.info("Transaction Message ( 0210 )---> {}", s);
+                return mti;
+            case "0110":
+                logger.info("Authorization Message ( 0110 )---> {}", s);
+                return mti;
+            case "0430":
+                logger.info("Reversal Response Message ( 0430 )---> {}", s);
+                return mti;
+            default:
+                logger.info("Rersponse ---->{}", s);
+                return mti;
         }
     }
 
     public Response toISW(final byte[] Message, host host) throws IOException, ParseException, RequestProcessingException {
-//        this.socket.close();//todo remove might throw exception
         Response responseObj = new Response();
         ISWprocessor processor = new ISWprocessor();
 
@@ -180,7 +187,7 @@ public class ChannelSocketRequestManager
             socketconn.getInputStream().read(resp);
 
             //ascii response message console log
-            asciiResponseMessage(resp);
+            String mti = asciiResponseMessage(resp);
 
             byte []tonibssresponse = processor.toPOS(resp);
 
@@ -188,7 +195,7 @@ public class ChannelSocketRequestManager
             final byte[] headBytes = DataUtil.shortToBytes(len);
             final byte[] response = concat(headBytes, tonibssresponse);
 
-            final TerminalTransactions msg = parseResponse(tonibssresponse);
+            final TerminalTransactions msg = parseResponse(tonibssresponse, mti);
 
             responseObj.setResponseByte(response);
             responseObj.setResponseMsg(msg);
@@ -324,7 +331,7 @@ public class ChannelSocketRequestManager
 //
 //    }
 
-    private TerminalTransactions parseResponse(final byte[] message) throws IOException, ParseException {
+    private TerminalTransactions parseResponse(final byte[] message, String mti) throws IOException, ParseException {
         final TerminalTransactions response = new TerminalTransactions();
         nibssresponse nibssresponse = new nibssresponse();
         final IsoMessage isoMessage = null;
@@ -347,7 +354,7 @@ public class ChannelSocketRequestManager
         response.setResponseCode(responseMessage.getObjectValue(39).toString());
 
         if (responseMessage != null && responseMessage.hasField(4)) {
-            response.setMti("0210");
+            response.setMti(mti);
             if (responseMessage.hasField(2)) {
                 response.setPan(responseMessage.getObjectValue(2).toString());
             }
