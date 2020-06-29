@@ -54,7 +54,7 @@ public class ChannelSocketRequestManager
 
     }
 
-    public ChannelSocketRequestManager(final String endpoint, final int port) throws IOException, KeyManagementException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException {
+    public ChannelSocketRequestManager(final String ipAddress, final int port) throws IOException, KeyManagementException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException {
         final TrustManager[] trustAllCerts = { new X509TrustManager() {
             public X509Certificate[] getAcceptedIssuers() {
                 final X509Certificate[] myTrustedAnchors = new X509Certificate[0];
@@ -69,7 +69,7 @@ public class ChannelSocketRequestManager
         } };
         final SSLContext sc = SSLContext.getInstance("SSL");
         sc.init(null, trustAllCerts, new SecureRandom());
-        this.socket = (SSLSocket)sc.getSocketFactory().createSocket(endpoint, port);
+        this.socket = (SSLSocket)sc.getSocketFactory().createSocket(ipAddress, port);
     }
 
     public void disconnect() throws IOException {

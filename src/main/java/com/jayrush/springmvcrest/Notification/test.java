@@ -21,7 +21,7 @@ public class test {
         byte [] key = Hex.decodeHex(tmskey.toCharArray());
 
         System.out.println(Arrays.toString(key));
-        Cipher cipher = Cipher.getInstance("AES");
+        Cipher cipher = Cipher.getInstance("AEdecryptMasterKeyS");
 //        System.out.println(tmskey.toCharArray()[0]);
 
         SecretKey originalKey = new SecretKeySpec(key, 0, key.length, "AES");

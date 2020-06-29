@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
+import java.security.cert.CertificateException;
 
 import static com.jayrush.springmvcrest.Nibss.utils.DataUtil.bytesToHex;
 import static com.jayrush.springmvcrest.utility.Utils.maskPanForReceipt;
@@ -400,7 +400,43 @@ public class IsoProcessor
         }
         return isoMessage;
     }
-    
+
+    public static void main(String...args) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, KeyManagementException, KeyStoreException {
+        ChannelSocketRequestManager socketRequester = null;
+//        socketRequester = new ChannelSocketRequestManager("10.2.2.47", 5336);
+//        socketRequester = new ChannelSocketRequestManager("10.9.8.102", 7071);
+//        int counter = 0;
+//        while (true){
+//            socketRequester = new ChannelSocketRequestManager("172.20.10.2", 7071);
+//            String toSend = "080022380000008000049A0000082913263910001213263908292302100101301008203900180000000000000000000000000000000000000000000000000000000000000000";
+//            final byte[] responseBytes = socketRequester.sendAndRecieveData(toSend.getBytes());
+//            counter++;
+//            System.out.println(responseBytes+"---------------response counter"+counter);
+//        }
+
+        socketRequester = new ChannelSocketRequestManager("192.168.137.1", 7071);
+//        String toSend = "080022380000008000059C0000061111423200000111423206112101CX8101301008203900180000000000000000000000000000000000000000000000000000000000000000";
+//        String toSend = "080022380000008000049A0000082913263910001213263908292302100101301008203900180000000000000000000000000000000000000000000000000000000000000000";
+//        String toSend = "080022380000008000059C0000061111423200000111423206112302100101301008203900180000000000000000000000000000000000000000000000000000000000000000";
+        String withdrawal = "0200F23C46D129E09220000000000000002116533477110632918000000000000000010006111205450027751205450611240354110510010012D0000000006111130335334771106329180D2403221015350444000220000669221230210012302FC000002383TAJ BANK AGENCY BANKING  2020    TAJLANG5664ADEAB2CB2EA96B52649F2608D673BD3F6720C70F9F2701809F10120110A04003220000000000000000000000FF9F3704576DDE289F360200B0950500800480009A032006119C01009F02060000000011005F2A020566820239009F1A0205669F03060000000000009F3303E040C89F34034203009F3501225F3401019F0607A00000000410109F410400002775029Reconciler>GENERIC&Option>000015511101513344101A796A9D85684FDA128E0CFFBA8289795ABA65DA8C2306E3B4B49CC5A2B6DDDC8";
+//        String reversal = "0420F23C46D129E08100000000420000002116539941201965898300000000000000010006111150500023691150320611230954110510000012D0000000006111130365399412019658983D23092011115173700000002100004132012TAJ00012TAJFC000002383TAJ BANK AGENCY BANKING  2020    TAJBank5660044021020000236906111150320000011113000000000000000000000100000000000000D00000000D000000000155111015133441013DD70DB2151FDBDADF8BCAC2585CCEB2EF584EC21310DE48C2D2C6EDC7378171";
+
+
+        final byte[] responseBytes = socketRequester.sendAndRecieveData(withdrawal.getBytes());
+        System.out.println(responseBytes);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
     public static ISO8583TransactionResponse processISO8583Transaction(final ISO8583TransactionRequest request, final byte[] sessionKey, final byte[] Message) {
         final ISO8583TransactionResponse response = new ISO8583TransactionResponse();
         ChannelSocketRequestManager socketRequester = null;

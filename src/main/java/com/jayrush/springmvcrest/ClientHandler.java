@@ -28,6 +28,7 @@ import com.jayrush.springmvcrest.iso8583.IsoValue;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
 import com.jayrush.springmvcrest.utility.CryptoException;
 import com.jayrush.springmvcrest.utility.Utils;
+import org.jetbrains.annotations.NotNull;
 import org.jpos.iso.ISOException;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -49,6 +50,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.generateHash256Value;
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
@@ -129,7 +132,116 @@ public class ClientHandler extends Thread {
             String messagesent = hexify(resp);
             String mti = logMessageType(messagesent);
 
-            host host = new host();
+            switch (mti){
+                case "0200":
+                    host host = new host();
+                    final TerminalTransactions request = parseRequest(resp, mti);
+                    double amount = Double.parseDouble(request.getAmount());
+                    logger.info("transaction Amount is {} ",amount);
+                    if (amount<minimumAmount){
+                        logger.info("Amount less than N100");
+                        IsoMessage transactionResponse = toISo(resp);
+                        ISWprocessor processor = new ISWprocessor();
+                        byte[] toPOS = processor.mockResponseForAmountLimit(transactionResponse);
+                        dos.write(toPOS);
+                        dos.flush();
+                        logger.info("************Response Sent*********");
+                        dos.close();
+                    }
+                    else {
+                        Terminals terminals = terminalRepository.findByterminalID(request.getTerminalID());
+                        logger.info("Request terminalID is {}",terminals.getTerminalID());
+                        Institution institution = institutionRepository.findByInstitutionID(terminals.getInstitution().getInstitutionID());
+                        logger.info("Request institution is {}",institution.getInstitutionName());
+                        if (Objects.nonNull(institution)){
+                            String profile;
+                            //getting the profile setting to route transaction based on set profile for terminal ID
+                            profile = setGlobalSettings(host, terminals, institution);
+                            //to save only transaction messages to database on transaction initialization
+                            id = saveTransactionRequest(id, request, terminals);
+                            switch (profile) {
+                                case "ISW":
+                                    byte[] translatedMsg = translatePin(resp, profile);
+                                    ExecutorService executorService = Executors.newFixedThreadPool(50);
+                                    Callable<String> callableTask = () -> {
+//                    TimeUnit.MILLISECONDS.sleep(300);
+                                        interswitchProfile(translatedMsg, host, request);
+                                        return "";
+                                    };
+                                    Future<String> future =
+                                            executorService.submit(callableTask);
+                                    System.out.println(future.get());
+//                                    interswitchProfile(translatedMsg, host, request);
+                                    break;
+                                case "POSVAS":
+                                case "EPMS":
+                                    byte[] translatedMsg2 = translatePin(resp, profile);
+                                    ExecutorService executorService2 = Executors.newFixedThreadPool(50);
+                                    Callable<String> callableTask2 = () -> {
+//                    TimeUnit.MILLISECONDS.sleep(300);
+                                        nibssProfile(translatedMsg2, host, request);
+                                        return "";
+                                    };
+                                    Future<String> future2 =
+                                            executorService2.submit(callableTask2);
+                                    System.out.println(future2.get());
+//                                    nibssProfile(translatedMsg2, host, request);
+                                    break;
+                                default:
+                                    logger.info("Profile does not exist for {}", profile);
+                                    break;
+                            }
+                        }
+                    }
+
+                    break;
+                case "0420":
+                    host host2 = new host();
+                    final TerminalTransactions reversalMsg = parseRequest(resp, mti);
+                    double reversalAmount = Double.parseDouble(reversalMsg.getAmount());
+                    logger.info("transaction Amount is {} ",reversalAmount);
+                    if (reversalAmount<minimumAmount){
+                        logger.info("Amount less than N100");
+                        IsoMessage reversalTransactionResponse = toISo(resp);
+                        ISWprocessor processor = new ISWprocessor();
+                        assert reversalTransactionResponse != null;
+                        byte[] toPOS = processor.mockResponseForAmountLimit(reversalTransactionResponse);
+                        dos.write(toPOS);
+                        dos.flush();
+                        logger.info("************Response Sent*********");
+                        dos.close();
+                    }
+                    else {
+                        Terminals terminals = terminalRepository.findByterminalID(reversalMsg.getTerminalID());
+                        logger.info("Request terminal is {}",terminals.getTerminalID());
+                        Institution institution = institutionRepository.findByInstitutionID(terminals.getInstitution().getInstitutionID());
+                        logger.info("Request Institution is {}",institution.getInstitutionName());
+                        String profile;
+                        //getting the profile setting to route transaction based on set profile for terminal ID
+                        profile = setGlobalSettings(host2, terminals, institution);
+                        //to save only transaction messages to database on transaction initialization
+                        id = saveTransactionRequest(id, reversalMsg, terminals);
+                        switch (profile) {
+                            case "ISW":
+                                byte[] translatedMsg = translateReversal(resp, profile);
+                                interswitchProfile(translatedMsg, host2, reversalMsg);
+                                break;
+                            case "POSVAS":
+                            case "EPMS":
+                                byte[] translatedMsg2 = translateReversal(resp, profile);
+                                nibssProfile(translatedMsg2, host2, reversalMsg);
+                                break;
+                            default:
+                                logger.info("Profile does not exist for {}", profile);
+                                break;
+                        }
+                    }
+                    break;
+
+                default:
+                    logger.info("Transaction type not found for {}",mti);
+            }
+            /*host host = new host();
 
             //to log the request message
             final TerminalTransactions request = parseRequest(resp, mti);
@@ -210,7 +322,7 @@ public class ClientHandler extends Thread {
                         logger.info("Profile does not exist for {}", profile);
                         break;
                 }
-            }
+            }*/
 
         } catch (IOException | ParseException | RequestProcessingException | ISOException | CryptoException e) {
             if (id.equals(1L)){
@@ -231,6 +343,10 @@ public class ClientHandler extends Thread {
                     logger.info(e.getMessage());
                 }
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         } finally {
             try {
                 dos.close();
@@ -239,14 +355,64 @@ public class ClientHandler extends Thread {
             }
         }
     }
+    private byte[] translateReversal(byte[] resp, String profile) throws IOException, CryptoException {
+        IsoMessage msg = toISo(resp);
+        //get medusa institution keys from keyGen table
+        assert msg != null;
+        terminalKeyManagement terminalKeyManagement = terminalKeysRepo.findByTerminalID(msg.getObjectValue(41));
+        if (Objects.nonNull(terminalKeyManagement)){
+            logger.info("Clear session key is {}",terminalKeyManagement.getSessionKey());
+            final byte[]iswSessionkeybyte = StringUtils.hexStringToByteArray(terminalKeyManagement.getSessionKey()!= null ? terminalKeyManagement.getSessionKey():"11111111111111111111111111111111");
+            if (profile.equals("ISW")){
+                logger.info("About doing reversal translation for NIBSS request");
+                return generateField128(msg,iswSessionkeybyte);
+            }else {
+                logger.info("About doing reversal translation for NIBSS request");
+
+                byte[] nibssSessionKeyBytes = StringUtils.hexStringToByteArray(terminalKeyManagement.getSessionKey());
+                //get nibss pinkey for terminalID
+                return generateField128(msg, nibssSessionKeyBytes);
+            }
+
+        }
+        else {
+            logger.info("TerminalID Keys not found. Advice Key download");
+            return new byte[0];
+        }
+    }
 
 
+    @NotNull
+    private Long saveTransactionRequest(Long id, TerminalTransactions request, Terminals terminals) {
+        SimpleDateFormat simpleDateFormat1 = new SimpleDateFormat("yyyyMMddHHmmss");
+        String date = simpleDateFormat1.format(new Date());
+        request.setInstitutionID(terminals.getInstitution().getInstitutionID());
+        request.setRequestDateTime(date);
+        request.setPan(Utils.maskPanForReceipt(request.getPan()));
+        id = request.getId();
+        transactionRepository.save(request);
+        return id;
+    }
+
+
+    private String setGlobalSettings(host host, Terminals terminals, Institution institution) {
+        String profile;
+        if (institution.getGlobalSetting().equals(true)){
+            profile = "ISW";
+            host.setHostName("ISW");
+            host.setHostIp(iswIpAddress);
+            host.setHostPort(iswPort);
+        }else{
+            profile = terminals.getProfile().getProfileName();
+            host.setHostName(terminals.getProfile().getProfileName());
+            host.setHostIp(terminals.getProfile().getProfileIP());
+            host.setHostPort(terminals.getProfile().getPort());
+        }
+        return profile;
+    }
 
     private byte[] translatePin(byte[] resp, String profile) throws IOException, CryptoException {
         IsoMessage msg = toISo(resp);
-        terminalKeyManagement terminalKeyManagement = terminalKeysRepo.findByTerminalID(msg.getObjectValue(41));
-
-        byte[] sessionKeyBytes = StringUtils.hexStringToByteArray(terminalKeyManagement.getSessionKey());
         byte[] msgtosend;
         String pinblock = msg.getObjectValue(52);
         //tmsKey for decrypting all request message pinblock
@@ -259,21 +425,30 @@ public class ClientHandler extends Thread {
             logger.info("Clear pinblock = {}",newPinblock);
 
             if (profile.equals("ISW")) {
+                byte[] sessionKeyBytes = StringUtils.hexStringToByteArray("11111111111111111111111111111111");
                 String iswPinblock = nibssToIswInterface.encryptPinBlock(newPinblock, iswPinkey);
                 final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) iswPinblock.toUpperCase(), 16);
                 msg.setField(52, (IsoValue) field52);
+                return generateField128(msg, sessionKeyBytes);
 
             } else {
-                //get nibss pinkey for terminalID
-                String nibssPinBlock = nibssToIswInterface.encryptPinBlock(newPinblock, terminalKeyManagement.getPinKey());
-                final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) nibssPinBlock.toUpperCase(), 16);
-                msg.setField(52, (IsoValue) field52);
+                terminalKeyManagement terminalKeyManagement = terminalKeysRepo.findByTerminalID(msg.getObjectValue(41));
+                if (terminalKeyManagement.getSessionKey().equals(null)){
+                    getKeysforTerminalID(msg.getObjectValue(41));
+                    return new byte[0];
+                }else {
+                    byte[] sessionKeyBytes = StringUtils.hexStringToByteArray(terminalKeyManagement.getSessionKey());
+                    //get nibss pinkey for terminalID
+                    String nibssPinBlock = nibssToIswInterface.encryptPinBlock(newPinblock, terminalKeyManagement.getPinKey());
+                    final IsoValue<String> field52 = (IsoValue<String>) new IsoValue(IsoType.ALPHA, (Object) nibssPinBlock.toUpperCase(), 16);
+                    msg.setField(52, (IsoValue) field52);
+                    return generateField128(msg, sessionKeyBytes);
+                }
+
             }
-            msgtosend = generateField128(msg, sessionKeyBytes);
         }else {
-            msgtosend = generateField128(msg, sessionKeyBytes);
+            return new byte[0];
         }
-        return msgtosend;
     }
 
     private byte[] generateField128(IsoMessage msg, byte[] sessionKeyBytes) {
@@ -437,7 +612,7 @@ public class ClientHandler extends Thread {
             return null;
         } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException| ParseException e) {
             logger.info(e.toString());
-            return null;
+            return new byte[0];
 
         } finally {
             if (socketRequester != null) {
@@ -449,6 +624,81 @@ public class ClientHandler extends Thread {
             }
         }
     }
+//    private byte[] sendTransactionToProcess(byte[] messagePayload, host host, TerminalTransactions request) {
+//        ChannelSocketRequestManager socketRequester = null;
+//        TerminalTransactions transactions = new TerminalTransactions();
+//        AtomicReference<Response> responseObject = new AtomicReference<>(new Response());
+//        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+//        String Date = simpleDateFormat.format(new Date());
+//        String message = hexify(messagePayload);
+//        String ascii = hexToAscii(message);
+//        String mti = ascii.substring(0, 4);
+//        try {
+//            //Host Connection connection
+//            logger.info("Host details {}", host);
+//            socketRequester = new ChannelSocketRequestManager(host.getHostIp(), host.getHostPort());
+//            ExecutorService executorService = Executors.newFixedThreadPool(10);
+//
+//            //send transaction to Processor
+//            if (host.getHostName().equals("ISW")) {
+//                ChannelSocketRequestManager finalSocketRequester = socketRequester;
+//                Callable<String> callableTask = () -> {
+////                    TimeUnit.MILLISECONDS.sleep(300);
+//                    responseObject.set(finalSocketRequester.toISW(messagePayload, host));
+//                    return "";
+//                };
+//                Future<String> future =
+//                        executorService.submit(callableTask);
+//                System.out.println(future.get());
+//
+//                modelMapper.map(responseObject.get().getResponseMsg(), transactions);
+//                transactions.setProcessedBy("INTERSWITCH");
+//            }
+//            else {
+//                responseObject.set(socketRequester.toNIBSS(messagePayload));
+//                modelMapper.map(responseObject.get().getResponseMsg(), transactions);
+//                transactions.setProcessedBy("NIBSS");
+//            }
+//
+//            //save transaction response to db if response was gotten
+//            //todo push key exchange for transaction
+//            if ((transactions.getResponseCode().equals("96"))&& transactions.getProcessedBy().equals("NIBSS")){
+//                getKeysforTerminalID(transactions.getTerminalID());
+//            }
+//            transaction(transactions);
+//
+//            return responseObject.get().getResponseByte();
+//        } catch (IOException e) {
+//            TerminalTransactions transaction = transactionRepository.findByTerminalIDAndRequestDateTimeAndTime(request.getTerminalID(), request.getRequestDateTime(), request.getTime());
+//            transaction.setDateCreated(Date);
+//            transaction.setResponseDesc("Transaction Timed out");
+//            transaction.setResponseCode("-1");
+//            transaction.setTranComplete(true);
+//            transaction.setStatus("Failed");
+//            String hostName = host.getHostName();
+//            if (hostName.equals("ISW")){
+//                transaction.setProcessedBy("INTERSWITCH");
+//            }
+//            else
+//                transaction.setProcessedBy("NIBSS");
+//
+//            transactionRepository.save(transaction);
+//            logger.info("Error ", e);
+//            return null;
+//        } catch (CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException | KeyStoreException | KeyManagementException | ParseException | InterruptedException | ExecutionException e) {
+//            logger.info(e.toString());
+//            return null;
+//
+//        } finally {
+//            if (socketRequester != null) {
+//                try {
+//                    socketRequester.disconnect();
+//                } catch (IOException ex) {
+//                    logger.info("Failed to disconnect socket ");
+//                }
+//            }
+//        }
+//    }
 
     private void transaction(TerminalTransactions transactions) {
         if (transactions.getAmount() != null) {

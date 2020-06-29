@@ -10,26 +10,17 @@ import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.IsoType;
 import com.jayrush.springmvcrest.iso8583.IsoValue;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
-import com.jayrush.springmvcrest.utility.CryptoException;
-import com.jayrush.springmvcrest.utility.emvUtil;
-import org.apache.poi.util.StringUtil;
 import org.jpos.iso.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.CrossOrigin;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
-import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
-import static com.jayrush.springmvcrest.Nibss.utils.DataUtil.parseTLV;
 import static com.jayrush.springmvcrest.utility.MainConverter.hexify;
 import static com.jayrush.springmvcrest.utility.Utils.maskPanForReceipt;
 import static com.jayrush.springmvcrest.utility.emvUtil.extractKeyValuePairs;
@@ -91,36 +82,16 @@ public class ISWprocessor {
             String asciiMessage = toAscii(fromPOSmessage);
             String mti = asciiMessage.substring(0,4);
             isoMsg.setMTI(mti);
-            if ("0200".equals(isoMsg.getMTI()) ||  "0420".equals(isoMsg.getMTI())) {
-                isoMsg.unset(4);
-                String amount = responseMessage.getObjectValue(4).toString();
-                String formatedAmount = amount.replace(".","");
-                String finalAmount = padLeftZeros(formatedAmount,12);
-                System.out.println("Transaction Amount is "+finalAmount);
-                isoMsg.set(4,finalAmount);
-                isoMsg.unset(59);
-                isoMsg.unset(60);
-                isoMsg.unset(128);
-                isoMsg.set(15,ISODate.getDate(now));
-                isoMsg.set(18,"6010");
-                isoMsg.set(33,"013622");
-                isoMsg.set(98, "0000000000|WDL|45:45:10:5");//identifying the payee (recipient) of a payment transaction //can be dummy data
-//                isoMsg.set(100, "506146");//A code identifying the financial institution that should receive a request or advice
-//                isoMsg.set(103, "6900326912");//When used in payment transactions, this field specifies the bank account number of the payee
-//                isoMsg.set(111, "42VWY37");//custom
-                isoMsg.set(113, "");//custom
-                isoMsg.set("127.0", "");
-                isoMsg.set("127.2", "0200:000663:0124165012:067250612");//switch key : The switch key field uniquely identifies a transaction.
-                isoMsg.set("127.3", "FCMBLmpSrc  FCMBFinSnk  180316180316FCMBGroup   ");//routing info
-                isoMsg.set("127.13", "000000 566       ");//pos geographic data
-                isoMsg.set("127.33", "6007");//pos geographic data
-                isoMsg.set(55,field55Generator(isoMsg, responseMessage));
-
-
-//                isoMsg.set("127.25", emvUtil.emvStringToXmlString(responseMessage.getObjectValue(55).toString()));
-                isoMsg.set("127.33", "6007");//Extended transaction type
+            switch (mti){
+                case "0200":
+                    sanitizeCashoutISO(isoMsg, now, responseMessage);
+                    break;
+                case "0420":
+                    sanitizeReversal(isoMsg, now, responseMessage);
+                    break;
+                default:
+                    break;
             }
-
             logger.info("Interswitch ISO request");
             for (int j = 0;j<isoMsg.getMaxField(); j++){
                 if (isoMsg.hasField(j)){
@@ -149,6 +120,65 @@ public class ISWprocessor {
         return prependLenBytes(message);
     }
 
+    private void sanitizeCashoutISO(ISOMsg isoMsg, Date now, IsoMessage responseMessage) throws ISOException, EmvProcessingException {
+        isoMsg.unset(4);
+        String amount = responseMessage.getObjectValue(4).toString();
+        String formatedAmount = amount.replace(".","");
+        String finalAmount = padLeftZeros(formatedAmount,12);
+        System.out.println("Transaction Amount is "+finalAmount);
+        isoMsg.set(4,finalAmount);
+        isoMsg.unset(59);
+        isoMsg.unset(60);
+        isoMsg.unset(128);
+
+        isoMsg.set(15, ISODate.getDate(now));
+        isoMsg.set(18,"6010");
+        isoMsg.set(33,"013622");
+        isoMsg.set(98, "0000000000|WDL|45:45:10:5");//identifying the payee (recipient) of a payment transaction //can be dummy data
+//                isoMsg.set(100, "506146");//A code identifying the financial institution that should receive a request or advice
+//                isoMsg.set(103, "6900326912");//When used in payment transactions, this field specifies the bank account number of the payee
+//                isoMsg.set(111, "42VWY37");//custom
+        isoMsg.set(113, "");//custom
+        isoMsg.set("127.0", "");
+        isoMsg.set("127.2", "0200:000663:0124165012:067250612");//switch key : The switch key field uniquely identifies a transaction.
+//        isoMsg.set("127.3", "FCMBLmpSrc  FCMBFinSnk  180316180316FCMBGroup   ");//routing info//add if it fails
+        isoMsg.set("127.13", "000000 566       ");//pos geographic data
+        isoMsg.set("127.33", "6007");//pos geographic data
+        isoMsg.set(55,field55Generator(isoMsg, responseMessage));
+//        isoMsg.unset(55);
+
+//                isoMsg.set("127.25", emvUtil.emvStringToXmlString(responseMessage.getObjectValue(55).toString()));
+        isoMsg.set("127.33", "6007");//Extended transaction type
+    }
+
+    private void sanitizeReversal(ISOMsg isoMsg, Date now, IsoMessage responseMessage) throws ISOException, EmvProcessingException {
+        isoMsg.unset(4);
+        String amount = responseMessage.getObjectValue(4).toString();
+        String formatedAmount = amount.replace(".","");
+        String finalAmount = padLeftZeros(formatedAmount,12);
+        System.out.println("Transaction Amount is "+finalAmount);
+        isoMsg.set(4,finalAmount);
+        isoMsg.unset(59);
+        isoMsg.unset(60);
+        isoMsg.unset(128);
+        isoMsg.set(15, ISODate.getDate(now));
+        isoMsg.set(18,"6010");
+        isoMsg.set(33,"013622");
+        isoMsg.set(98, "0000000000|WDL|45:45:10:5");//identifying the payee (recipient) of a payment transaction //can be dummy data
+//                isoMsg.set(100, "506146");//A code identifying the financial institution that should receive a request or advice
+//                isoMsg.set(103, "6900326912");//When used in payment transactions, this field specifies the bank account number of the payee
+//                isoMsg.set(111, "42VWY37");//custom
+        isoMsg.set(113, "");//custom
+        isoMsg.set("127.0", "");
+        isoMsg.set("127.2", "0200:000663:0124165012:067250612");//switch key : The switch key field uniquely identifies a transaction.
+        isoMsg.set("127.3", "FCMBLmpSrc  FCMBFinSnk  180316180316FCMBGroup   ");//routing info
+        isoMsg.set("127.13", "000000 566       ");//pos geographic data
+        isoMsg.set("127.33", "6007");//pos geographic data
+
+//                isoMsg.set("127.25", emvUtil.emvStringToXmlString(responseMessage.getObjectValue(55).toString()));
+        isoMsg.set("127.33", "6007");//Extended transaction type
+    }
+
     private String field55Generator(ISOMsg isoMsg, IsoMessage responseMessage) throws EmvProcessingException {
         Map<String, String> field55 = extractKeyValuePairs(responseMessage.getObjectValue(55).toString());
 //                String tlvAmount = field55.get("9F02");
@@ -174,8 +204,7 @@ public class ISWprocessor {
         return output.toString();
     }
 
-
-    public byte[] prependLenBytes(byte[] data) {
+    private byte[] prependLenBytes(byte[] data) {
         short len = (short) data.length;
         byte[] newBytes = new byte[len + 2];
         newBytes[0] = (byte) (len / 256);
@@ -188,7 +217,7 @@ public class ISWprocessor {
         return StringUtils.padLeft(Long.toHexString(Long.parseLong(ISOUtil.hexString(amount))), 12, '0');
     }
 
-    public byte[]toPOS(byte[]fromISW) throws IOException, ParseException, RequestProcessingException{
+    public byte[]toPOS(byte[]fromISW) {
         ISOMsg iswResponse = new ISOMsg();
         PostBridgePackager packager = new PostBridgePackager();
         iswResponse.setPackager(packager);
@@ -265,7 +294,7 @@ public class ISWprocessor {
 
     }
 
-    public String padLeftZeros(String inputString, int length) {
+    private String padLeftZeros(String inputString, int length) {
         if (inputString.length() >= length) {
             return inputString;
         }

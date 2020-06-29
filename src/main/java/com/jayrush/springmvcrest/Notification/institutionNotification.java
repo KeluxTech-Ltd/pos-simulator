@@ -114,10 +114,9 @@ public class institutionNotification {
         }
     }
 
-//    @Scheduled(cron = "0 1 1 * * *")
-    @Scheduled(fixedDelay = 86400000)
+    @Scheduled(cron = "0 1 1 * * *")
+//    @Scheduled(fixedDelay = 86400000)
     public void start(){
-
         Socket s = null;
         DataInputStream dis = null;
         DataOutputStream dos = null;
@@ -156,29 +155,6 @@ public class institutionNotification {
 
     }
 
-    private boolean todoCheckForFailed(ClientHandler clientHandler) {
-        List<terminalKeyManagement> terminalKeyManagementList = terminalKeysRepo.findByParameterDownloadedOrMasterKeyOrPinKeyOrSessionKey(null,null,null,null);
-        if (Objects.nonNull(terminalKeyManagementList)){
-            for (terminalKeyManagement terminalKeyManagement : terminalKeyManagementList) {
-                Terminals terminal = terminalRepository.findByterminalID(terminalKeyManagement.getTerminalID());
-                if (Objects.nonNull(terminal)) {
-                    terminalKeyManagement key = clientHandler.keyManagement(terminal);
-                    terminalKeyManagement.setMasterKey(key.getMasterKey());
-                    terminalKeyManagement.setSessionKey(key.getSessionKey());
-                    terminalKeyManagement.setPinKey(key.getPinKey());
-                    terminalKeyManagement.setParameterDownloaded(key.getParameterDownloaded());
-                    terminalKeyManagement.setLastExchangeDateTime(key.getLastExchangeDateTime());
-                    terminalKeysRepo.save(terminalKeyManagement);
-                } else {
-                    terminalKeysRepo.save(terminalKeyManagement);
-                }
-            }
-            return true;
-        }else {
-            return false;
-        }
-    }
-
     public String KeyExchangePerTID(String TerminalID){
         Socket s = null;
         DataInputStream dis = null;
@@ -208,24 +184,6 @@ public class institutionNotification {
             logger.info("Terminal Id exist Error");
             return "Terminal Id exist Error";
         }
-    }
-
-    public static void main(String[]args){
-        //A simple program to find the sum of all even numbers from 0 - 100
-        int finalNumber = 100;
-        int counter = 0;
-        int total = 0;
-
-        while (counter<=finalNumber){
-            if (counter%2==0){
-                System.out.println("Even Number "+ counter);
-                total = total+counter;
-                counter++;
-            }
-            System.out.println("Odd Number "+ counter);
-            counter++;
-        }
-        System.out.println(total);
     }
 
 
