@@ -25,6 +25,7 @@ public interface TransactionInterface {
     int terminalCount();
     List<List<String>> activeInactiveTerminals();
     List<TerminalTransactions> repushTransactions(dateRange dateRange);
+    List<TerminalTransactions> getAllUnnotifiedTransactions2();
 
 //    TerminalTransactions search(String terminalid, String rrn, String stan);
 }

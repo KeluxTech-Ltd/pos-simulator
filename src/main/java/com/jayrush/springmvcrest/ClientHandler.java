@@ -7,6 +7,8 @@ import com.jayrush.springmvcrest.Nibss.network.ChannelSocketRequestManager;
 import com.jayrush.springmvcrest.Nibss.processor.IsoProcessor;
 import com.jayrush.springmvcrest.Nibss.repository.DataStore;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
+import com.jayrush.springmvcrest.Notification.MedusaNotification;
+import com.jayrush.springmvcrest.Notification.institutionNotification;
 import com.jayrush.springmvcrest.Repositories.InstitutionRepository;
 import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
@@ -28,6 +30,7 @@ import com.jayrush.springmvcrest.iso8583.IsoValue;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
 import com.jayrush.springmvcrest.utility.CryptoException;
 import com.jayrush.springmvcrest.utility.Utils;
+import org.apache.commons.codec.DecoderException;
 import org.jetbrains.annotations.NotNull;
 import org.jpos.iso.ISOException;
 import org.modelmapper.ModelMapper;
@@ -37,14 +40,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.CertificateException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -162,7 +165,7 @@ public class ClientHandler extends Thread {
                             switch (profile) {
                                 case "ISW":
                                     byte[] translatedMsg = translatePin(resp, profile);
-                                    ExecutorService executorService = Executors.newFixedThreadPool(50);
+                                    /*ExecutorService executorService = Executors.newFixedThreadPool(50);
                                     Callable<String> callableTask = () -> {
 //                    TimeUnit.MILLISECONDS.sleep(300);
                                         interswitchProfile(translatedMsg, host, request);
@@ -170,13 +173,13 @@ public class ClientHandler extends Thread {
                                     };
                                     Future<String> future =
                                             executorService.submit(callableTask);
-                                    System.out.println(future.get());
-//                                    interswitchProfile(translatedMsg, host, request);
+                                    System.out.println(future.get());*/
+                                    interswitchProfile(translatedMsg, host, request);
                                     break;
                                 case "POSVAS":
                                 case "EPMS":
                                     byte[] translatedMsg2 = translatePin(resp, profile);
-                                    ExecutorService executorService2 = Executors.newFixedThreadPool(50);
+                                    /*ExecutorService executorService2 = Executors.newFixedThreadPool(50);
                                     Callable<String> callableTask2 = () -> {
 //                    TimeUnit.MILLISECONDS.sleep(300);
                                         nibssProfile(translatedMsg2, host, request);
@@ -184,8 +187,8 @@ public class ClientHandler extends Thread {
                                     };
                                     Future<String> future2 =
                                             executorService2.submit(callableTask2);
-                                    System.out.println(future2.get());
-//                                    nibssProfile(translatedMsg2, host, request);
+                                    System.out.println(future2.get());*/
+                                    nibssProfile(translatedMsg2, host, request);
                                     break;
                                 default:
                                     logger.info("Profile does not exist for {}", profile);
@@ -343,10 +346,6 @@ public class ClientHandler extends Thread {
                     logger.info(e.getMessage());
                 }
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
         } finally {
             try {
                 dos.close();
@@ -590,8 +589,8 @@ public class ClientHandler extends Thread {
             if ((transactions.getResponseCode().equals("96"))&& transactions.getProcessedBy().equals("NIBSS")){
                 getKeysforTerminalID(transactions.getTerminalID());
             }
+            //save transaction and notify Freedom
             transaction(transactions);
-
             return responseObject.getResponseByte();
         } catch (IOException | RequestProcessingException e) {
             TerminalTransactions transaction = transactionRepository.findByTerminalIDAndRequestDateTimeAndTime(request.getTerminalID(), request.getRequestDateTime(), request.getTime());
@@ -730,6 +729,7 @@ public class ClientHandler extends Thread {
                 }
                 else {
                     logger.info("Procedure conditions not met");
+
                 }
             } else {
                 transactions.setResponseDesc("Cannot Find transaction using rrn and Terminal ID to map response");

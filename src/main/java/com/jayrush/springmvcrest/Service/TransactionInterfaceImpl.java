@@ -68,6 +68,11 @@ public class TransactionInterfaceImpl implements TransactionInterface {
     }
 
     @Override
+    public List<TerminalTransactions> getAllUnnotifiedTransactions2() {
+        return transactionRepository.getallunprocessedtransactions();
+    }
+
+    @Override
     public List<TerminalTransactions>getTransactionsByinstitutionID(String institutionID) {
         return transactionRepository.findByinstitutionIDIgnoreCaseOrderByDate(institutionID);
     }

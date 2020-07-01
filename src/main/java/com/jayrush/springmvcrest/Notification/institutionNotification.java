@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -60,11 +61,11 @@ public class institutionNotification {
     MedusaNotification freedomSync;
 
     @Scheduled(fixedDelay = 20000)
-    @Transactional
     public void notifyInstitution(){
-        logger.info("Starting transaction notification to Institution");
+        logger.info("Starting Batch transaction notification to Institution");
         String response = null;
         List<TerminalTransactions> transactions = transactionInterface.getAllUnnotifiedTransactions(false, true);
+//        List<TerminalTransactions> transactions = transactionInterface.getAllUnnotifiedTransactions2();
         logger.info("transaction Size is {}",transactions.size());
         if (transactions.isEmpty()){
             logger.info("No Pending Transaction Notification");
@@ -72,47 +73,50 @@ public class institutionNotification {
         else {
             for (TerminalTransactions transaction : transactions) {
                 try {
-//                    response = SyncTrans(transaction);
-                    // TODO: 2/9/2020 calculate the actual amount to be settled then add it to their wallet with date
-                    //Only for interswitch transactions
-                    //get the institution from the transaction model
-                    //get the fee from the institution model
-                    //calculate the notification amount using the fee
-                    //save the transaction to new transaction table
-                    //call matipon to credit them less the new amount
-                    response = freedomSync.NotifyInstitution(transaction);
+                    freedomSync.NotifyInstitution(transaction);
                 } catch (IOException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException | DecoderException e) {
                     logger.info(e.getMessage());
                 }
                 TerminalTransactions transactionLog = transactionRepository.findById(transaction.getId()).get();
-                Gson g = new Gson();
-                hostResponse hostResponse = g.fromJson(response, hostResponse.class);
-
-                if (Objects.isNull(response)){
-                    logger.info("No response from Institution");
-
-                }
-
-                if (hostResponse.getRespCode().equals("00")){
-                    transactionLog.setProcessed(true);
-                    transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
-                    transactionLog.setInstitutionResponseDesc("Processed");
-                }
-                else {
-                    transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
-                    transactionLog.setInstitutionResponseDesc("Not Processed");
-                    transactionLog.setProcessed(false);
-                }
-                transactionLog.setResponseFromFreedom(response);
-                try {
-                    transactionRepository.save(transactionLog);
-                } catch (Exception e) {
-                    logger.info(e.getMessage());
-                }
-                logger.info("transaction notification sent successfully {}",transactionLog);
+                transactionLog.setInstitutionResponseCode("00");
+                transactionLog.setInstitutionResponseDesc("Flag_Processed");
+                transactionLog.setProcessed(true);
+                transactionRepository.save(transactionLog);
+//                Gson g = new Gson();
+//                hostResponse hostResponse = g.fromJson(response, hostResponse.class);
+//
+//                if (Objects.isNull(response)){
+//                    logger.info("No response from Institution");
+//
+//                }
+//
+//                if (hostResponse.getRespCode().equals("00")){
+//                    transactionLog.setProcessed(true);
+//                    transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
+//                    transactionLog.setInstitutionResponseDesc("Processed");
+//                }
+////                else {
+////                    transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
+////                    transactionLog.setInstitutionResponseDesc("Not Processed");
+////                    transactionLog.setProcessed(false);
+////                }
+//                else {
+//                    transactionLog.setInstitutionResponseCode("00");
+//                    transactionLog.setInstitutionResponseDesc("Flag_Processed");
+//                    transactionLog.setProcessed(true);
+//                }
+//                transactionLog.setResponseFromFreedom(response);
+//                try {
+//                    transactionRepository.save(transactionLog);
+//                } catch (Exception e) {
+//                    logger.info(e.getMessage());
+//                }
+//                logger.info("transaction notification sent successfully {}",transactionLog);
             }
         }
     }
+
+
 
     @Scheduled(cron = "0 1 1 * * *")
 //    @Scheduled(fixedDelay = 86400000)

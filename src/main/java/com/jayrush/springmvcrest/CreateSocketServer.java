@@ -62,18 +62,18 @@ public class CreateSocketServer {
                 ChannelSocketRequestManager socketRequestManager=new ChannelSocketRequestManager();
                 applicationContext.getAutowireCapableBeanFactory().autowireBean(socketRequestManager);
 
-                ExecutorService executorService = Executors.newFixedThreadPool(100);
-                ClientHandler clientHandler=new ClientHandler(socketInstance,inputStream,outputStream);
+//                ExecutorService executorService = Executors.newFixedThreadPool(100);
+                Thread clientHandler=new ClientHandler(socketInstance,inputStream,outputStream);
                 applicationContext.getAutowireCapableBeanFactory().autowireBean(clientHandler);
-
-                Callable<String> callableTask = () -> {
-//                    TimeUnit.MILLISECONDS.sleep(300);
-                    clientHandler.run();
-                    return "";
-                };
-                Future<String> future =
-                        executorService.submit(callableTask);
-                System.out.println(future.get());
+                clientHandler.run();
+//                Callable<String> callableTask = () -> {
+////                    TimeUnit.MILLISECONDS.sleep(300);
+//                    clientHandler.run();
+//                    return "";
+//                };
+//                Future<String> future =
+//                        executorService.submit(callableTask);
+//                System.out.println(future.get());
 
 
             }

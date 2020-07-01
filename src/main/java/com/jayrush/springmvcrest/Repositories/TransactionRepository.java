@@ -25,6 +25,9 @@ public interface TransactionRepository extends JpaRepository<TerminalTransaction
 
     List<TerminalTransactions> findByProcessedAndTranComplete(boolean processed, boolean tranComplete);
 
+    @Query(value = "select t from TerminalTransactions t  order by t.id desc")
+    List<TerminalTransactions> getallunprocessedtransactions();
+
     Page<TerminalTransactions>findByinstitutionIDAndDateTimeBetween(String institutionID, Date from, Date to, Pageable pageable);
     Page<TerminalTransactions>findTopByinstitutionIDAndDateTimeBetween(String institutionID, String from, String to, Pageable pageable);
 
@@ -60,6 +63,10 @@ public interface TransactionRepository extends JpaRepository<TerminalTransaction
 
 
     List<TerminalTransactions>findByStatusAndDateCreatedBetween(String status, String from, String to);
+
+    @Query(value = "select top 1 * from transaction_logs where tran_complete = 1 and processed = 0 order by id desc ", nativeQuery = true)
+    TerminalTransactions getunnotified();
+
     List<TerminalTransactions>findByInstitutionIDAndStatusAndDateCreatedBetween(String institutionID,String status, String from, String to);
 
 
