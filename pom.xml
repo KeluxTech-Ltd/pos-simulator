@@ -19,7 +19,14 @@
     </properties>
 
     <dependencies>
-<!--        <dependency>-->
+        <!-- https://mvnrepository.com/artifact/org.jpos/jpos -->
+        <dependency>
+            <groupId>org.jpos</groupId>
+            <artifactId>jpos</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+
+        <!--        <dependency>-->
 <!--            <groupId>com.common-codec.code</groupId>-->
 <!--            <artifactId>commons-codec</artifactId>-->
 <!--            <version>1.9</version>-->
