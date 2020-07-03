@@ -60,7 +60,7 @@ public class institutionNotification {
     @Autowired
     MedusaNotification freedomSync;
 
-    @Scheduled(fixedDelay = 20000)
+//    @Scheduled(fixedDelay = 20000)
     public void notifyInstitution(){
         logger.info("Starting Batch transaction notification to Institution");
         String response = null;
@@ -82,44 +82,11 @@ public class institutionNotification {
                 transactionLog.setInstitutionResponseDesc("Flag_Processed");
                 transactionLog.setProcessed(true);
                 transactionRepository.save(transactionLog);
-//                Gson g = new Gson();
-//                hostResponse hostResponse = g.fromJson(response, hostResponse.class);
-//
-//                if (Objects.isNull(response)){
-//                    logger.info("No response from Institution");
-//
-//                }
-//
-//                if (hostResponse.getRespCode().equals("00")){
-//                    transactionLog.setProcessed(true);
-//                    transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
-//                    transactionLog.setInstitutionResponseDesc("Processed");
-//                }
-////                else {
-////                    transactionLog.setInstitutionResponseCode(hostResponse.getRespCode());
-////                    transactionLog.setInstitutionResponseDesc("Not Processed");
-////                    transactionLog.setProcessed(false);
-////                }
-//                else {
-//                    transactionLog.setInstitutionResponseCode("00");
-//                    transactionLog.setInstitutionResponseDesc("Flag_Processed");
-//                    transactionLog.setProcessed(true);
-//                }
-//                transactionLog.setResponseFromFreedom(response);
-//                try {
-//                    transactionRepository.save(transactionLog);
-//                } catch (Exception e) {
-//                    logger.info(e.getMessage());
-//                }
-//                logger.info("transaction notification sent successfully {}",transactionLog);
             }
         }
     }
 
-
-
     @Scheduled(cron = "0 1 1 * * *")
-//    @Scheduled(fixedDelay = 86400000)
     public void start(){
         Socket s = null;
         DataInputStream dis = null;

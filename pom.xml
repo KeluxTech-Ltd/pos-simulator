@@ -19,31 +19,31 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.common-codec.code</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>1.9</version>
-        </dependency>
-        <dependency>
-            <groupId>com.commons.code</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.jpos.code</groupId>
-            <artifactId>jpos</artifactId>
-            <version>1.0.1</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.common-codec.code</groupId>-->
+<!--            <artifactId>commons-codec</artifactId>-->
+<!--            <version>1.9</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.commons.code</groupId>-->
+<!--            <artifactId>commons-io</artifactId>-->
+<!--            <version>2.2</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>com.jpos.code</groupId>-->
+<!--            <artifactId>jpos</artifactId>-->
+<!--            <version>1.0.1</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>com.j8583.code</groupId>
             <artifactId>j8583</artifactId>
             <version>1.14.0</version>
         </dependency>
-        <dependency>
-            <groupId>com.nibss-tms.code</groupId>
-            <artifactId>nibss-tms</artifactId>
-            <version>1.0.1</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.nibss-tms.code</groupId>-->
+<!--            <artifactId>nibss-tms</artifactId>-->
+<!--            <version>1.0.1</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>io.springfox</groupId>
             <artifactId>springfox-swagger-ui</artifactId>

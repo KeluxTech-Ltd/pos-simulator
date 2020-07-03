@@ -317,8 +317,6 @@ public class MedusaNotification {
 
         });
 
-
-//        return respBody[0];
     }
 
     public static void main(String[]args) throws DecoderException {

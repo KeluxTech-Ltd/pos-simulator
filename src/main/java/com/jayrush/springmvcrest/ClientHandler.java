@@ -165,7 +165,7 @@ public class ClientHandler extends Thread {
                             switch (profile) {
                                 case "ISW":
                                     byte[] translatedMsg = translatePin(resp, profile);
-                                    /*ExecutorService executorService = Executors.newFixedThreadPool(50);
+                                    ExecutorService executorService = Executors.newFixedThreadPool(50);
                                     Callable<String> callableTask = () -> {
 //                    TimeUnit.MILLISECONDS.sleep(300);
                                         interswitchProfile(translatedMsg, host, request);
@@ -173,13 +173,19 @@ public class ClientHandler extends Thread {
                                     };
                                     Future<String> future =
                                             executorService.submit(callableTask);
-                                    System.out.println(future.get());*/
-                                    interswitchProfile(translatedMsg, host, request);
+                                    future.get();
+                                    if (!executorService.awaitTermination(60, TimeUnit.SECONDS)){
+                                        executorService.shutdown();
+                                    }
+
+
+
+//                                    interswitchProfile(translatedMsg, host, request);
                                     break;
                                 case "POSVAS":
                                 case "EPMS":
                                     byte[] translatedMsg2 = translatePin(resp, profile);
-                                    /*ExecutorService executorService2 = Executors.newFixedThreadPool(50);
+                                    ExecutorService executorService2 = Executors.newFixedThreadPool(50);
                                     Callable<String> callableTask2 = () -> {
 //                    TimeUnit.MILLISECONDS.sleep(300);
                                         nibssProfile(translatedMsg2, host, request);
@@ -187,8 +193,11 @@ public class ClientHandler extends Thread {
                                     };
                                     Future<String> future2 =
                                             executorService2.submit(callableTask2);
-                                    System.out.println(future2.get());*/
-                                    nibssProfile(translatedMsg2, host, request);
+                                    future2.get();
+                                    if (!executorService2.awaitTermination(60, TimeUnit.SECONDS)){
+                                        executorService2.shutdown();
+                                    }
+//                                    nibssProfile(translatedMsg2, host, request);
                                     break;
                                 default:
                                     logger.info("Profile does not exist for {}", profile);
@@ -346,6 +355,10 @@ public class ClientHandler extends Thread {
                     logger.info(e.getMessage());
                 }
             }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
         } finally {
             try {
                 dos.close();
