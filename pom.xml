@@ -187,11 +187,11 @@
             <artifactId>mssql-jdbc</artifactId>
             <version>6.1.0.jre8</version>
         </dependency>
-
-
-
-
-
+        <dependency>
+            <groupId>com.nibss.code</groupId>
+            <artifactId>nibss-tms-client-lib</artifactId>
+            <version>1.0.1-SNAPSHOT</version>
+        </dependency>
 
 
     </dependencies>
