@@ -34,11 +34,11 @@
 <!--            <artifactId>jpos</artifactId>-->
 <!--            <version>1.0.1</version>-->
 <!--        </dependency>-->
-        <dependency>
-            <groupId>com.j8583.code</groupId>
-            <artifactId>j8583</artifactId>
-            <version>1.14.0</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.j8583.code</groupId>-->
+<!--            <artifactId>j8583</artifactId>-->
+<!--            <version>1.14.0</version>-->
+<!--        </dependency>-->
 <!--        <dependency>-->
 <!--            <groupId>com.nibss-tms.code</groupId>-->
 <!--            <artifactId>nibss-tms</artifactId>-->
