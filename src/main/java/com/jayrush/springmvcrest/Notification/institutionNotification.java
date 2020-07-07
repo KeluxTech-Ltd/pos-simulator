@@ -1,6 +1,5 @@
 package com.jayrush.springmvcrest.Notification;
 
-import com.google.gson.Gson;
 import com.jayrush.springmvcrest.ClientHandler;
 import com.jayrush.springmvcrest.Repositories.TerminalRepository;
 import com.jayrush.springmvcrest.Repositories.TransactionRepository;
@@ -8,19 +7,14 @@ import com.jayrush.springmvcrest.Repositories.terminalKeysRepo;
 import com.jayrush.springmvcrest.Service.TransactionInterface;
 import com.jayrush.springmvcrest.domain.TerminalTransactions;
 import com.jayrush.springmvcrest.domain.Terminals;
-import com.jayrush.springmvcrest.domain.hostResponse;
 import com.jayrush.springmvcrest.domain.terminalKeyManagement;
-import jdk.nashorn.internal.ir.Terminal;
 import org.apache.commons.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;

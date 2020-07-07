@@ -125,11 +125,13 @@ public class ClientHandler extends Thread {
         try {
             logger.info("AWaiting data------------------------------------------");
             final byte[] lenBytes = new byte[2];
-            dis.readFully(lenBytes);
+            dis.read(lenBytes);
+//            dis.readFully(lenBytes);
 
             final int contentLength = DataUtil.bytesToShort(lenBytes);
             final byte[] resp = new byte[contentLength];
-            dis.readFully(resp);
+            dis.read(resp);
+//            dis.readFully(resp);
 
             //log the request message
             String messagesent = hexify(resp);
@@ -198,6 +200,7 @@ public class ClientHandler extends Thread {
                                         executorService2.shutdown();
                                     }
 //                                    nibssProfile(translatedMsg2, host, request);
+                                    //todo notify transaction
                                     break;
                                 default:
                                     logger.info("Profile does not exist for {}", profile);
@@ -252,6 +255,7 @@ public class ClientHandler extends Thread {
 
                 default:
                     logger.info("Transaction type not found for {}",mti);
+                    break;
             }
             /*host host = new host();
 

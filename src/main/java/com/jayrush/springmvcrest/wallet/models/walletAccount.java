@@ -40,5 +40,7 @@ public class walletAccount {
     private Double minimumCharge;
     private Double maximumCharge;
     private Double feePercentage;
+    private boolean flatfee = false;
+    private Double flatfeeAmount;
 
 }
