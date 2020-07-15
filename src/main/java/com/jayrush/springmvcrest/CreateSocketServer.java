@@ -117,11 +117,11 @@ public class CreateSocketServer {
                     ChannelSocketRequestManager socketRequestManager=new ChannelSocketRequestManager();
                     applicationContext.getAutowireCapableBeanFactory().autowireBean(socketRequestManager);
 
-                    ExecutorService executorService = Executors.newFixedThreadPool(50);
-
-
-                    ClientHandler clientHandler = new ClientHandler(socketInstance,inputStream,outputStream);
-                    applicationContext.getAutowireCapableBeanFactory().autowireBean(clientHandler);
+//                    ExecutorService executorService = Executors.newFixedThreadPool(50);
+//
+//
+//                    ClientHandler clientHandler = new ClientHandler(socketInstance,inputStream,outputStream);
+                    /*applicationContext.getAutowireCapableBeanFactory().autowireBean(clientHandler);
                     Callable<String> callableTask = () -> {
 //                    TimeUnit.MILLISECONDS.sleep(300);
                         clientHandler.run();
@@ -132,7 +132,7 @@ public class CreateSocketServer {
                     System.out.println(future.get());
                     if (!executorService.awaitTermination(60, TimeUnit.SECONDS)){
                         executorService.shutdown();
-                    }
+                    }*/
 
 //                executorService.execute(new Runnable() {
 //                    @Override
@@ -144,12 +144,11 @@ public class CreateSocketServer {
 //                    }
 //                });
 //                executorService.shutdown();
-//                Thread clientHandler=new ClientHandler(socketInstance,inputStream,outputStream);
-//
-//                applicationContext.getAutowireCapableBeanFactory().autowireBean(clientHandler);
-//                clientHandler.start();
-//                clientHandler.stop();
+                Thread clientHandler=new ClientHandler(socketInstance,inputStream,outputStream);
 
+                applicationContext.getAutowireCapableBeanFactory().autowireBean(clientHandler);
+                clientHandler.start();
+//                clientHandler.stop();
 
                 }
 
