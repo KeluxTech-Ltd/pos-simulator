@@ -30,63 +30,6 @@ public class CreateSocketServer {
     private ApplicationContext applicationContext;
     private static Logger logger = LoggerFactory.getLogger(CreateSocketServer.class);
 
-    //method to create socket
-/*    public  void createSocket()
-    {
-        ServerSocket serverSocket=null;
-        try
-        {
-            serverSocket = new ServerSocket(port);
-        // running infinite loop for getting
-
-        // client request
-        while (true)
-        {
-            Socket socketInstance = new Socket();
-//            socketInstance.setSoTimeout(120000);
-            try
-            {
-                // socket object to receive incoming client requests
-                socketInstance = serverSocket.accept();
-                logger.info("Client is connected on : {}" , socketInstance);
-
-                // obtaining input and out streams
-                DataInputStream inputStream = new DataInputStream(new BufferedInputStream(socketInstance.getInputStream()));
-                DataOutputStream outputStream = new DataOutputStream(socketInstance.getOutputStream());
-
-                logger.info("Assigning new thread for this client");
-
-////            // create a new thread object
-                ChannelSocketRequestManager socketRequestManager=new ChannelSocketRequestManager();
-                applicationContext.getAutowireCapableBeanFactory().autowireBean(socketRequestManager);
-
-//                ExecutorService executorService = Executors.newFixedThreadPool(100);
-                Thread clientHandler=new ClientHandler(socketInstance,inputStream,outputStream);
-                applicationContext.getAutowireCapableBeanFactory().autowireBean(clientHandler);
-                clientHandler.run();
-//                Callable<String> callableTask = () -> {
-////                    TimeUnit.MILLISECONDS.sleep(300);
-//                    clientHandler.run();
-//                    return "";
-//                };
-//                Future<String> future =
-//                        executorService.submit(callableTask);
-//                System.out.println(future.get());
-
-
-            }
-
-            catch (Exception e){
-                socketInstance.close();
-                e.printStackTrace();
-            }
-        }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-    }*/
-
 
     public  void createSocket()
     {

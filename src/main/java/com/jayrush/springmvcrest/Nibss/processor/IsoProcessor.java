@@ -8,8 +8,10 @@ import com.jayrush.springmvcrest.Nibss.constants.Globals;
 import com.jayrush.springmvcrest.Nibss.constants.TransactionErrorCode;
 import com.jayrush.springmvcrest.Nibss.models.transaction.*;
 import com.jayrush.springmvcrest.Nibss.network.ChannelSocketRequestManager;
+import com.jayrush.springmvcrest.Nibss.network.ChannelSslSocketRequestManager;
 import com.jayrush.springmvcrest.Nibss.utils.DataUtil;
 import com.jayrush.springmvcrest.Service.TerminalInterfaceImpl;
+import com.jayrush.springmvcrest.domain.nibssresponse;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.IsoType;
 import com.jayrush.springmvcrest.iso8583.IsoValue;
@@ -22,6 +24,9 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static com.jayrush.springmvcrest.Nibss.utils.DataUtil.bytesToHex;
 import static com.jayrush.springmvcrest.utility.Utils.maskPanForReceipt;
@@ -31,7 +36,7 @@ import static com.jayrush.springmvcrest.utility.Utils.maskPanForReceipt;
 public class IsoProcessor
 {
    // static Logger logger;
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(IsoProcessor.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(IsoProcessor.class);
     private static String NIBSS_IP;
     private static int NIBSS_PORT;
     public static String CONFIG_FILE;
@@ -48,20 +53,20 @@ public class IsoProcessor
         try {
             final IsoMessage ismsg = new IsoMessage();
             ismsg.setType(2048);
-            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getProcessingCode(), 6);
-            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.DATE10, (Object)request.getTransmissionDateAndTime(), 10);
-            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getSystemTraceAuditNumber(), 6);
-            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.TIME, (Object)request.getTimeLocalTransaction(), 6);
-            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)request.getDateLocalTransaction(), 4);
-            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getCardAcceptorTerminalId(), 8);
-            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)"0100820390018");
-            ismsg.setField(3, (IsoValue)field3);
-            ismsg.setField(7, (IsoValue)field4);
-            ismsg.setField(11, (IsoValue)field5);
-            ismsg.setField(12, (IsoValue)field6);
-            ismsg.setField(13, (IsoValue)field7);
-            ismsg.setField(41, (IsoValue)field8);
-            ismsg.setField(62, (IsoValue)field9);
+            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getProcessingCode(), 6);
+            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.DATE10, request.getTransmissionDateAndTime(), 10);
+            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getSystemTraceAuditNumber(), 6);
+            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.TIME, request.getTimeLocalTransaction(), 6);
+            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE4, request.getDateLocalTransaction(), 4);
+            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getCardAcceptorTerminalId(), 8);
+            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, "0100820390018");
+            ismsg.setField(3, field3);
+            ismsg.setField(7, field4);
+            ismsg.setField(11, field5);
+            ismsg.setField(12, field6);
+            ismsg.setField(13, field7);
+            ismsg.setField(41, field8);
+            ismsg.setField(62, field9);
             final byte[] messagepayload = ismsg.writeData();
             socketRequester = new ChannelSocketRequestManager(IsoProcessor.NIBSS_IP, IsoProcessor.NIBSS_PORT);
 
@@ -88,20 +93,20 @@ public class IsoProcessor
                     response.setEncryptedMasterKey(responseMessage.getObjectValue(53).toString());
                 }
             }
-            System.out.println("Get masterkey response: {}"+ (Object)response);
-            logger.info("Get masterkey response: {}"+ (Object)response);
+            System.out.println("Get masterkey response: {}"+ response);
+            logger.info("Get masterkey response: {}"+ response);
         }
         catch (IOException e) {
             response = new GetMasterKeyResponse();
             response.setField39("-1");
-            System.out.println("Failed to get master key due to IO exception"+ (Throwable)e);
-            logger.info("Failed to get master key due to IO exception"+ (Throwable)e);
+            System.out.println("Failed to get master key due to IO exception"+ e);
+            logger.info("Failed to get master key due to IO exception"+ e);
         }
         catch (Exception e2) {
             response = new GetMasterKeyResponse();
             response.setField39("-1");
-            System.out.println("Failed to get pin key"+ (Throwable)e2);
-            logger.info("Failed to get pin key"+ (Throwable)e2);
+            System.out.println("Failed to get pin key"+ e2);
+            logger.info("Failed to get pin key"+ e2);
         }
         finally {
             if (socketRequester != null) {
@@ -123,20 +128,20 @@ public class IsoProcessor
         try {
             final IsoMessage ismsg = new IsoMessage();
             ismsg.setType(2048);
-            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getProcessingCode(), 6);
-            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.DATE10, (Object)request.getTransmissionDateAndTime(), 10);
-            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getSystemTraceAuditNumber(), 6);
-            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.TIME, (Object)request.getTimeLocalTransaction(), 6);
-            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)request.getDateLocalTransaction(), 4);
-            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getCardAcceptorTerminalId(), 8);
-            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)"0100820390018");
-            ismsg.setField(3, (IsoValue)field3);
-            ismsg.setField(7, (IsoValue)field4);
-            ismsg.setField(11, (IsoValue)field5);
-            ismsg.setField(12, (IsoValue)field6);
-            ismsg.setField(13, (IsoValue)field7);
-            ismsg.setField(41, (IsoValue)field8);
-            ismsg.setField(62, (IsoValue)field9);
+            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getProcessingCode(), 6);
+            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.DATE10, request.getTransmissionDateAndTime(), 10);
+            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getSystemTraceAuditNumber(), 6);
+            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.TIME, request.getTimeLocalTransaction(), 6);
+            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE4, request.getDateLocalTransaction(), 4);
+            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getCardAcceptorTerminalId(), 8);
+            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, "0100820390018");
+            ismsg.setField(3, field3);
+            ismsg.setField(7, field4);
+            ismsg.setField(11, field5);
+            ismsg.setField(12, field6);
+            ismsg.setField(13, field7);
+            ismsg.setField(41, field8);
+            ismsg.setField(62, field9);
             final byte[] messagepayload = ismsg.writeData();
             socketRequester = new ChannelSocketRequestManager(IsoProcessor.NIBSS_IP, IsoProcessor.NIBSS_PORT);
             final byte[] responseBytes = socketRequester.sendAndRecieveData(messagepayload);
@@ -148,7 +153,7 @@ public class IsoProcessor
             responseMessageFactory.setEtx(-1);
             responseMessageFactory.setIgnoreLastMissingField(false);
             responseMessageFactory.setConfigPath(IsoProcessor.CONFIG_FILE);
-            final IsoMessage responseMessage = (IsoMessage) responseMessageFactory.parseMessage(responseBytes, 0);
+            final IsoMessage responseMessage = responseMessageFactory.parseMessage(responseBytes, 0);
             if (responseMessage != null) {
                 response = new GetSessionKeyResponse();
                 if (responseMessage.hasField(53)) {
@@ -158,11 +163,11 @@ public class IsoProcessor
         }
         catch (IOException e) {
             response = new GetSessionKeyResponse();
-            System.out.println("Failed to get session key due to IO exception"+ (Throwable)e);
+            System.out.println("Failed to get session key due to IO exception"+ e);
         }
         catch (Exception e2) {
             response = new GetSessionKeyResponse();
-            System.out.println("Failed to get session key"+ (Throwable)e2);
+            System.out.println("Failed to get session key"+ e2);
         }
         finally {
             if (socketRequester != null) {
@@ -183,20 +188,20 @@ public class IsoProcessor
         try {
             final IsoMessage ismsg = new IsoMessage();
             ismsg.setType(2048);
-            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getProcessingCode(), 6);
-            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.DATE10, (Object)request.getTransmissionDateAndTime(), 10);
-            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getSystemTraceAuditNumber(), 6);
-            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.TIME, (Object)request.getTimeLocalTransaction(), 6);
-            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)request.getDateLocalTransaction(), 4);
-            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getCardAcceptorTerminalId(), 8);
-            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)"0100820390018");
-            ismsg.setField(3, (IsoValue)field3);
-            ismsg.setField(7, (IsoValue)field4);
-            ismsg.setField(11, (IsoValue)field5);
-            ismsg.setField(12, (IsoValue)field6);
-            ismsg.setField(13, (IsoValue)field7);
-            ismsg.setField(41, (IsoValue)field8);
-            ismsg.setField(62, (IsoValue)field9);
+            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getProcessingCode(), 6);
+            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.DATE10, request.getTransmissionDateAndTime(), 10);
+            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getSystemTraceAuditNumber(), 6);
+            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.TIME, request.getTimeLocalTransaction(), 6);
+            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE4, request.getDateLocalTransaction(), 4);
+            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getCardAcceptorTerminalId(), 8);
+            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, "0100820390018");
+            ismsg.setField(3, field3);
+            ismsg.setField(7, field4);
+            ismsg.setField(11, field5);
+            ismsg.setField(12, field6);
+            ismsg.setField(13, field7);
+            ismsg.setField(41, field8);
+            ismsg.setField(62, field9);
             final byte[] messagepayload = ismsg.writeData();
             socketRequester = new ChannelSocketRequestManager(IsoProcessor.NIBSS_IP, IsoProcessor.NIBSS_PORT);
             final byte[] responseBytes = socketRequester.sendAndRecieveData(messagepayload);
@@ -208,7 +213,7 @@ public class IsoProcessor
             responseMessageFactory.setEtx(-1);
             responseMessageFactory.setIgnoreLastMissingField(false);
             responseMessageFactory.setConfigPath(IsoProcessor.CONFIG_FILE);
-            final IsoMessage responseMessage = (IsoMessage) responseMessageFactory.parseMessage(responseBytes, 0);
+            final IsoMessage responseMessage = responseMessageFactory.parseMessage(responseBytes, 0);
             if (responseMessage != null) {
                 response = new GetPinKeyResponse();
                 if (responseMessage.hasField(53)) {
@@ -218,11 +223,11 @@ public class IsoProcessor
         }
         catch (IOException e) {
             response = new GetPinKeyResponse();
-            System.out.println("Failed to get pin key due to IO exception"+ (Throwable)e);
+            System.out.println("Failed to get pin key due to IO exception"+ e);
         }
         catch (Exception e2) {
             response = new GetPinKeyResponse();
-            System.out.println("Failed to get pin key"+ (Throwable)e2);
+            System.out.println("Failed to get pin key"+ e2);
         }
         finally {
             if (socketRequester != null) {
@@ -243,35 +248,35 @@ public class IsoProcessor
         try {
             final IsoMessage ismsg = new IsoMessage();
             ismsg.setType(2048);
-            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getProcessingCode(), 6);
-            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.DATE10, (Object)request.getTransmissionDateAndTime(), 10);
-            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getSystemTraceAuditNumber(), 6);
-            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.TIME, (Object)request.getTimeLocalTransaction(), 6);
-            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)request.getDateLocalTransaction(), 4);
-            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getCardAcceptorTerminalId(), 8);
-            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)"0100820390018");
-            final IsoValue<String> field10 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)new String(new byte[] { 0 }), 64);
-            ismsg.setField(3, (IsoValue)field3);
-            ismsg.setField(7, (IsoValue)field4);
-            ismsg.setField(11, (IsoValue)field5);
-            ismsg.setField(12, (IsoValue)field6);
-            ismsg.setField(13, (IsoValue)field7);
-            ismsg.setField(41, (IsoValue)field8);
-            ismsg.setField(62, (IsoValue)field9);
-            ismsg.setField(64, (IsoValue)field10);
+            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getProcessingCode(), 6);
+            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.DATE10, request.getTransmissionDateAndTime(), 10);
+            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getSystemTraceAuditNumber(), 6);
+            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.TIME, request.getTimeLocalTransaction(), 6);
+            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.DATE4, request.getDateLocalTransaction(), 4);
+            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getCardAcceptorTerminalId(), 8);
+            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, "0100820390018");
+            final IsoValue<String> field10 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, new String(new byte[] { 0 }), 64);
+            ismsg.setField(3, field3);
+            ismsg.setField(7, field4);
+            ismsg.setField(11, field5);
+            ismsg.setField(12, field6);
+            ismsg.setField(13, field7);
+            ismsg.setField(41, field8);
+            ismsg.setField(62, field9);
+            ismsg.setField(64, field10);
             final byte[] bites = ismsg.writeData();
-            System.out.println("Get Params bytes {}"+ (Object)new String(bites));
+            System.out.println("Get Params bytes {}"+ new String(bites));
             final int length = bites.length;
             final byte[] temp = new byte[length - 64];
             if (length >= 64) {
                 System.arraycopy(bites, 0, temp, 0, length - 64);
             }
             final String hashHex = generateHash256Value(temp, sessionKey);
-            ismsg.setField(64, new IsoValue(IsoType.ALPHA, (Object)hashHex, 64));
+            ismsg.setField(64, new IsoValue(IsoType.ALPHA, hashHex, 64));
             final byte[] messagepayload = ismsg.writeData();
             socketRequester = new ChannelSocketRequestManager(IsoProcessor.NIBSS_IP, IsoProcessor.NIBSS_PORT);
             final byte[] responseBytes = socketRequester.sendAndRecieveData(messagepayload);
-            System.out.println("Get params response bytes {}"+ (Object)new String(responseBytes));
+            System.out.println("Get params response bytes {}"+ new String(responseBytes));
             final MessageFactory<IsoMessage> responseMessageFactory = (MessageFactory<IsoMessage>)new MessageFactory();
             responseMessageFactory.addMessageTemplate(ismsg);
             responseMessageFactory.setAssignDate(true);
@@ -292,7 +297,7 @@ public class IsoProcessor
             }
         }
         catch (Exception e) {
-            System.out.println("Failed to get master key"+ (Throwable)e);
+            System.out.println("Failed to get master key"+ e);
             if (socketRequester != null) {
                 try {
                     socketRequester.disconnect();
@@ -318,114 +323,278 @@ public class IsoProcessor
     private static IsoMessage generateISOMessage(final ISO8583TransactionRequest request) {
         final IsoMessage isoMessage = new IsoMessage();
         isoMessage.setType(request.getMessageType());
-        final IsoValue<String> field2 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)request.getPanField2());
-        final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getProcessingCodeField3(), 6);
-        final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.AMOUNT, (Object)request.getTransactionAmountField4(), 12);
-        final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.DATE10, (Object)request.getTransmissionDateTimeField7(), 10);
-        final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getStanField11(), 6);
-        final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.TIME, (Object)request.getLocalTransactionTimeField12(), 6);
-        final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)request.getLocalTransactionDateField13(), 4);
-        final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)request.getCardExpirationDateField14());
-        final IsoValue<String> field10 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getMerchantTypeField18(), 4);
-        final IsoValue<String> field11 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getPosEntryModeField22(), 3);
-        final IsoValue<String> field12 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getCardSequenceNumberField23(), 3);
-        final IsoValue<String> field13 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getPosConditionCodeField25(), 2);
-        final IsoValue<String> field14 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getPosPinCaptureCodeField26(), 2);
-        final IsoValue<String> field15 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getTransactionFeeAmountField28(), 9);
-        final IsoValue<String> field16 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)request.getAcquiringInstitutionIdCodeField32());
-        final IsoValue<String> field17 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)request.getTrack2DataField35());
-        final IsoValue<String> field18 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getRetrievalReferenceNumberField37(), 12);
-        final IsoValue<String> field19 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getServiceRestrictionCodeField40(), 3);
-        final IsoValue<String> field20 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getTerminalIdField41(), 8);
-        final IsoValue<String> field21 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getCardAcceptorIdCodeField42(), 15);
-        final IsoValue<String> field22 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getCardAcceptorNameOrLocationField43(), 40);
-        final IsoValue<String> field23 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)request.getTransactionCurrencyCodeField49(), 3);
-        final IsoValue<String> field24 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)request.getiCCDataField55());
-        final IsoValue<String> field25 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)request.getPaymentInformationField60());
-        final IsoValue<String> field26 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)request.getPOSDataCodeField123());
-        final IsoValue<String> field27 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)new String(new byte[] { 0 }), 64);
-        isoMessage.setField(2, (IsoValue)field2);
-        isoMessage.setField(3, (IsoValue)field3);
-        isoMessage.setField(4, (IsoValue)field4);
-        isoMessage.setField(7, (IsoValue)field5);
-        isoMessage.setField(11, (IsoValue)field6);
-        isoMessage.setField(12, (IsoValue)field7);
-        isoMessage.setField(13, (IsoValue)field8);
-        isoMessage.setField(14, (IsoValue)field9);
-        isoMessage.setField(18, (IsoValue)field10);
-        isoMessage.setField(22, (IsoValue)field11);
-        isoMessage.setField(23, (IsoValue)field12);
-        isoMessage.setField(25, (IsoValue)field13);
-        isoMessage.setField(26, (IsoValue)field14);
-        isoMessage.setField(28, (IsoValue)field15);
-        isoMessage.setField(32, (IsoValue)field16);
-        isoMessage.setField(35, (IsoValue)field17);
-        isoMessage.setField(37, (IsoValue)field18);
-        isoMessage.setField(40, (IsoValue)field19);
-        isoMessage.setField(41, (IsoValue)field20);
-        isoMessage.setField(42, (IsoValue)field21);
-        isoMessage.setField(43, (IsoValue)field22);
-        isoMessage.setField(49, (IsoValue)field23);
-        isoMessage.setField(60, (IsoValue)field25);
-        isoMessage.setField(55, (IsoValue)field24);
-        isoMessage.setField(123, (IsoValue)field26);
-        isoMessage.setField(128, (IsoValue)field27);
+        final IsoValue<String> field2 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, request.getPanField2());
+        final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getProcessingCodeField3(), 6);
+        final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.AMOUNT, request.getTransactionAmountField4(), 12);
+        final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.DATE10, request.getTransmissionDateTimeField7(), 10);
+        final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getStanField11(), 6);
+        final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.TIME, request.getLocalTransactionTimeField12(), 6);
+        final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.DATE4, request.getLocalTransactionDateField13(), 4);
+        final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.DATE4, request.getCardExpirationDateField14());
+        final IsoValue<String> field10 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getMerchantTypeField18(), 4);
+        final IsoValue<String> field11 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getPosEntryModeField22(), 3);
+        final IsoValue<String> field12 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getCardSequenceNumberField23(), 3);
+        final IsoValue<String> field13 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getPosConditionCodeField25(), 2);
+        final IsoValue<String> field14 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getPosPinCaptureCodeField26(), 2);
+        final IsoValue<String> field15 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getTransactionFeeAmountField28(), 9);
+        final IsoValue<String> field16 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, request.getAcquiringInstitutionIdCodeField32());
+        final IsoValue<String> field17 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, request.getTrack2DataField35());
+        final IsoValue<String> field18 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getRetrievalReferenceNumberField37(), 12);
+        final IsoValue<String> field19 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getServiceRestrictionCodeField40(), 3);
+        final IsoValue<String> field20 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getTerminalIdField41(), 8);
+        final IsoValue<String> field21 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getCardAcceptorIdCodeField42(), 15);
+        final IsoValue<String> field22 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getCardAcceptorNameOrLocationField43(), 40);
+        final IsoValue<String> field23 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, request.getTransactionCurrencyCodeField49(), 3);
+        final IsoValue<String> field24 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, request.getiCCDataField55());
+        final IsoValue<String> field25 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, request.getPaymentInformationField60());
+        final IsoValue<String> field26 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, request.getPOSDataCodeField123());
+        final IsoValue<String> field27 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, new String(new byte[] { 0 }), 64);
+        isoMessage.setField(2, field2);
+        isoMessage.setField(3, field3);
+        isoMessage.setField(4, field4);
+        isoMessage.setField(7, field5);
+        isoMessage.setField(11, field6);
+        isoMessage.setField(12, field7);
+        isoMessage.setField(13, field8);
+        isoMessage.setField(14, field9);
+        isoMessage.setField(18, field10);
+        isoMessage.setField(22, field11);
+        isoMessage.setField(23, field12);
+        isoMessage.setField(25, field13);
+        isoMessage.setField(26, field14);
+        isoMessage.setField(28, field15);
+        isoMessage.setField(32, field16);
+        isoMessage.setField(35, field17);
+        isoMessage.setField(37, field18);
+        isoMessage.setField(40, field19);
+        isoMessage.setField(41, field20);
+        isoMessage.setField(42, field21);
+        isoMessage.setField(43, field22);
+        isoMessage.setField(49, field23);
+        isoMessage.setField(60, field25);
+        isoMessage.setField(55, field24);
+        isoMessage.setField(123, field26);
+        isoMessage.setField(128, field27);
         if (request.getAuthoriationCode38() != null) {
-            final IsoValue<String> field28 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getAuthoriationCode38(), 6);
-            isoMessage.setField(38, (IsoValue)field28);
+            final IsoValue<String> field28 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getAuthoriationCode38(), 6);
+            isoMessage.setField(38, field28);
         }
         if (request.getPinDataField52() != null) {
-            final IsoValue<String> field29 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getPinDataField52(), 16);
-            isoMessage.setField(52, (IsoValue)field29);
+            final IsoValue<String> field29 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getPinDataField52(), 16);
+            isoMessage.setField(52, field29);
         }
         if (request.getAdditionalAmountsField54() != null) {
-            final IsoValue<String> field30 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)request.getAdditionalAmountsField54());
-            isoMessage.setField(54, (IsoValue)field30);
+            final IsoValue<String> field30 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, request.getAdditionalAmountsField54());
+            isoMessage.setField(54, field30);
         }
         if (request.getMessageReasonCodeField56() != null) {
-            final IsoValue<String> field31 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)request.getMessageReasonCodeField56());
-            isoMessage.setField(56, (IsoValue)field31);
+            final IsoValue<String> field31 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, request.getMessageReasonCodeField56());
+            isoMessage.setField(56, field31);
         }
         if (request.getTransportDataField59() != null) {
-            final IsoValue<String> field32 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)request.getTransportDataField59());
-            isoMessage.setField(59, (IsoValue)field32);
+            final IsoValue<String> field32 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, request.getTransportDataField59());
+            isoMessage.setField(59, field32);
         }
         if (request.getOriginalDataElementsField90() != null) {
-            final IsoValue<String> field33 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getOriginalDataElementsField90(), 42);
-            isoMessage.setField(90, (IsoValue)field33);
+            final IsoValue<String> field33 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getOriginalDataElementsField90(), 42);
+            isoMessage.setField(90, field33);
         }
         if (request.getReplacementAmountsField95() != null) {
-            final IsoValue<String> field34 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)request.getReplacementAmountsField95(), 42);
-            isoMessage.setField(95, (IsoValue)field34);
+            final IsoValue<String> field34 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, request.getReplacementAmountsField95(), 42);
+            isoMessage.setField(95, field34);
         }
         return isoMessage;
     }
 
-    public static void main(String...args) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, KeyManagementException, KeyStoreException {
+    public static void main(String...args) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, IOException, KeyManagementException, KeyStoreException, ParseException {
         ChannelSocketRequestManager socketRequester = null;
-//        socketRequester = new ChannelSocketRequestManager("10.2.2.47", 5336);
-        socketRequester = new ChannelSocketRequestManager("10.9.8.102", 7071);
-//        int counter = 0;
-//        while (true){
-//            socketRequester = new ChannelSocketRequestManager("172.20.10.2", 7071);
-//            String toSend = "080022380000008000049A0000082913263910001213263908292302100101301008203900180000000000000000000000000000000000000000000000000000000000000000";
-//            final byte[] responseBytes = socketRequester.sendAndRecieveData(toSend.getBytes());
-//            counter++;
-//            System.out.println(responseBytes+"---------------response counter"+counter);
-//        }
+//        String withdrawalMethod = "0200F23C46D129E09230000000000000002116539983921671360100000000000000020012221347160000211347161222230654110510010004D0000000003044345399839216713601D230622100131545201851000978892212101CX822302BA000009611CW BY 9PSB_AGENT @ 43, ADEOLA ODEKU S NG566463DB51F4B84428B3349F01061234567890009F02060000000002009F03060000000000009F090200029F10120110A040002A0000000000000000000000FF9F150212349F26086DBABC4EBF43BF229F2701809F3303E0F8C89F34034203009F3501229F360201359F3704A1A9B4BD9F4104000001009F1A0205669F1E083132333435363738950500202480009A031222009C01005F24032306305F2A0205665F340101820239008407A0000000041010006010101017Payment from mpos015511101512344101DBA38C48CD708443D41A58E939BF8254FDE0F72D9B5BBDA1C877625DE558463D";
+  String withdrawalMethod = "0200F23C46D129E09230000000000000002116539983921671360100000000000000020012221347160000211347161222230654110510010004D0000000003044345399839216713601D230622100131545202743946858982212101KI582302BA000009611CW BY 9PSB_AGENT @ 43, ADEOLA ODEKU S NG566463DB51F4B84428B3349F01061234567890009F02060000000002009F03060000000000009F090200029F10120110A040002A0000000000000000000000FF9F150212349F26086DBABC4EBF43BF229F2701809F3303E0F8C89F34034203009F3501229F360201359F3704A1A9B4BD9F4104000001009F1A0205669F1E083132333435363738950500202480009A031222009C01005F24032306305F2A0205665F340101820239008407A0000000041010006010101017Payment from mpos015511101512344101DBA38C48CD708443D41A58E939BF8254FDE0F72D9B5BBDA1C877625DE558463D";
+
+//        String pin_change = "0600F23846C028E01A0000000000000000211950616601001322113319210000000000000000423151249000154151249042354110510000004365061660100132211331D22116010099104682619187169332101CX82TAJAGENCYBANKIN161918716933@2101CX82TAJ_AGENT        NGDA932B3A7E9EED4100F8E28B216576673D0000000000000000000000000000004269F0106A000000000019F02060000000000009F03060000000000009F090200019F10200FA501A103C0000000000000000000000F0100000000000000000000000000009F150200019F26083564CA4A7F8E4FA29F2701809F3303E0F8C89F34034103009F3501229F360200DC9F37048C49901B9F4104000000019F1A0205669F1E083030303030303031950502000408009A032104239C01005F24032211305F2A0205665F340100820258008407A00000037100015A0A5061660100132211331F57125061660100132211331D2211601009910468015010101511044001BC129F775F0B4E7C012AB5A643E26E8FD0BCF62DB703A20A70758535BA612B20";
+        final IsoMessage isoMessages = null;
+        final MessageFactory<IsoMessage> responseMessageFactorys = (MessageFactory<IsoMessage>)new MessageFactory();
+        responseMessageFactorys.addMessageTemplate(isoMessages);
+        responseMessageFactorys.setAssignDate(true);
+        responseMessageFactorys.setUseBinaryBitmap(false);
+        responseMessageFactorys.setUseBinaryMessages(false);
+        responseMessageFactorys.setEtx(-1);
+        responseMessageFactorys.setIgnoreLastMissingField(false);
+        responseMessageFactorys.setConfigPath(IsoProcessor.CONFIG_FILE);
+        IsoMessage responseMessages = null;
+        try {
+            responseMessages = responseMessageFactorys.parseMessage(withdrawalMethod.getBytes(), 0);
+            printIsoFields(responseMessages, "ISO REQUEST MESSAGE ====> ");
+        }
+        catch (Exception e2) {
+//            response.setResponseCodeField39(TransactionErrorCode.FAILED_TO_READ_RESPONSE);
+        }
+
+//        ChannelSslSocketRequestManager socketRequester = null;
+        socketRequester = new ChannelSocketRequestManager("test.3lineng.com", 2001);
+//        socketRequester = new ChannelSslSocketRequestManager("41.216.165.126", 8888);
+//        socketRequester = new ChannelSocketRequestManager("tms.3lineng.com", 7071);
+//        socketRequester = new ChannelSslSocketRequestManager("41.203.107.82", 8888);//2TLI30CG
+//        socketRequester = new ChannelSocketRequestManager("196.13.161.97", 8888);
+//        socketRequester = new ChannelSocketRequestManager("127.0.0.1", 2001);
+//        socketRequester = new ChannelSocketRequestManager("102.135.213.34", 8888);
+//        socketRequester = new ChannelSslSocketRequestManager("196.13.161.237", 8888);
+
 
 //        socketRequester = new ChannelSocketRequestManager("41.219.149.51", 5336);
-        String masterkey = "080022380000008000009A00000611115612005889115612061123021001";
-        String sessionKey = "080022380000008000009B00000611115623005890115623061123021001";
-        String pinkey = "080022380000008000009G00000611115633005891115633061123021001";
-//        String withdrawal = "0200F23C46D129E09220000000000000002116533477110632918000000000000000010006111205450027751205450611240354110510010012D0000000006111130335334771106329180D2403221015350444000220000669221230210012302FC000002383TAJ BANK AGENCY BANKING  2020    TAJLANG5664ADEAB2CB2EA96B52649F2608D673BD3F6720C70F9F2701809F10120110A04003220000000000000000000000FF9F3704576DDE289F360200B0950500800480009A032006119C01009F02060000000011005F2A020566820239009F1A0205669F03060000000000009F3303E040C89F34034203009F3501225F3401019F0607A00000000410109F410400002775029Reconciler>GENERIC&Option>000015511101513344101A796A9D85684FDA128E0CFFBA8289795ABA65DA8C2306E3B4B49CC5A2B6DDDC8";
-        String withdrawal = "0200F23C46D129E09220000000000000002116533477110632918000000000000000110007051656470031051656470705240354110510010012D0000000006111130335334771106329180D2403221015350444000220000798221230210012302FC000002383TAJ BANK AGENCY BANKING  2020    TAJLANG5662083CEA7C272247F2829F02060000000011009F03060000000000009F0607A00000000410109F1A0205669F260849318E88C0A8BBE49F2701809F10120110A04003220400000000000000000000FF9F3303E040C89F34034203009F3501229F3704A45022CE9F36020113950500800480009A032007059C01005F2A020566820239005F3401018407A00000000410109F410400003105029Reconciler>GENERIC&Option>000015511101513344101195F8E86092B93995370F5209A40E0367C554AD3A89D43F54448848D868F77FD";
-//        String reversal = "0420F23C46D129E08100000000420000002116539941201965898300000000000000010006111150500023691150320611230954110510000012D0000000006111130365399412019658983D23092011115173700000002100004132012TAJ00012TAJFC000002383TAJ BANK AGENCY BANKING  2020    TAJBank5660044021020000236906111150320000011113000000000000000000000100000000000000D00000000D000000000155111015133441013DD70DB2151FDBDADF8BCAC2585CCEB2EF584EC21310DE48C2D2C6EDC7378171";
+//        String masterkey = "080022380000008000009A0000061111561200588911561206112101CY00";
+//        String sessionKey = "080022380000008000009B00000611115623005890115623061123021001"; 2TLI0001
+//        String pinkey = "080022380000008000009G00000611115633005891115633061123021001";
+//  String withdrawalMethod = "0200F23C46D129E09230000000000000002116539983921671360100000000000000020012221347160000211347161222230654110510010004D0000000003044345399839216713601D2306221001315452018439468589822120442R112302BA000009611CW BY 9PSB_AGENT @ 43, ADEOLA ODEKU S NG566463DB51F4B84428B3349F01061234567890009F02060000000002009F03060000000000009F090200029F10120110A040002A0000000000000000000000FF9F150212349F26086DBABC4EBF43BF229F2701809F3303E0F8C89F34034203009F3501229F360201359F3704A1A9B4BD9F4104000001009F1A0205669F1E083132333435363738950500202480009A031222009C01005F24032306305F2A0205665F340101820239008407A0000000041010006010101017Payment from mpos015511101512344101DBA38C48CD708443D41A58E939BF8254FDE0F72D9B5BBDA1C877625DE558463D";
+        //        String withdrawalMethod = "0200F23C46D129E08230000000000000002116418745102695510600100000000660000004131202390000021202390413210154110510020004044 06111130324187451026955106D2101226195532491618311759962262101KI58YOU VERIFY161831175996@2101KI58YOU_VERIFY NG566000006010101017Payment from mpos015511101512344101C8BC8B2D49D732442D072FCE23F6D4E0AC512D4658751BA23D4697AFD1251259";
+//        String balance = "0100F23C46D129E08200000000000000002116539983921671360131100000000000000003120055170000170055170312230654110510010012D0000000006539983345399839216713601D2306221001315452000000000001722120442R112302SO000056406Visum Solution LANG                     5662309F26088F026D3E2599E0339F2701809F10120110A50003020000000000000000000000FF9F3704F53491339F36020128950504800008009A032103129C01319F02060000000000009F03060000000000005F2A020566820239009F3303E0F8C85F3401019F3501229F34034103029F1A02056601551011151134410176B828634D7F433712D693BDBCD9329D5A1E74CDCC4D07C80DAB2434474E31B5";
+
+//        String withdrawalMethod = "0200F23C46D129E08200000000000000002116532732010452386200000000000001000004221534450013441534450422220954110510010012D0000000006532732345327320104523862D220922100154277881001344742032212TLPC2A62302SO000056452Tellerpoint.                        LANG5662309F26084557BD1F5DCE10D59F2701809F10120110A50003020400000000000000000000FF9F3704E3C0F1CB9F360205D0950504800008009A032104229C01009F02060000000100009F03060000000000005F2A020566820239009F3303E0F8C85F3401019F3501229F34034103029F1A020566015510101511344101ACF15CBD56EB28102DB8E6D29B96642825EBC73D4CFE971625823DDB63B692ED";
 
 
-        final byte[] responseBytes = socketRequester.sendAndRecieveData(withdrawal  .getBytes());
-        System.out.println(responseBytes);
-    }
+        for(int i = 0; i<306;i++){
+            final byte[] responseBytes = socketRequester.sendAndRecieveData(withdrawalMethod.getBytes());
+            System.out.println(responseBytes);
+            final IsoMessage isoMessage = null;
+            final ISO8583TransactionResponse response = new ISO8583TransactionResponse();
+            if (responseBytes != null && responseBytes.length > 0) {
+                System.out.println("Response receive {}"+ new String(responseBytes));
+            }
+            final MessageFactory<IsoMessage> responseMessageFactory = (MessageFactory<IsoMessage>)new MessageFactory();
+            responseMessageFactory.addMessageTemplate(isoMessage);
+            responseMessageFactory.setAssignDate(true);
+            responseMessageFactory.setUseBinaryBitmap(false);
+            responseMessageFactory.setUseBinaryMessages(false);
+            responseMessageFactory.setEtx(-1);
+            responseMessageFactory.setIgnoreLastMissingField(false);
+            responseMessageFactory.setConfigPath(IsoProcessor.CONFIG_FILE);
+            IsoMessage responseMessage = null;
+            try {
+                responseMessage = responseMessageFactory.parseMessage(responseBytes, 0);
+                printIsoFields(responseMessage, "ISO MESSAGE ====> ");
+            }
+            catch (Exception e2) {
+                response.setResponseCodeField39(TransactionErrorCode.FAILED_TO_READ_RESPONSE);
+            }
+            if (responseMessage != null) {
+                if (responseMessage.hasField(2)) {
+                    response.setPanField2(responseMessage.getObjectValue(2).toString());
+                }
+                if (responseMessage.hasField(3)) {
+                    response.setProcessingCodeField3(responseMessage.getObjectValue(3).toString());
+                }
+                if (responseMessage.hasField(4)) {
+                    response.setTransactionAmountField4(responseMessage.getObjectValue(4).toString());
+                }
+                if (responseMessage.hasField(7)) {
+                    response.setTransactionSettlementAmountField7(responseMessage.getObjectValue(7).toString());
+                }
+                if (responseMessage.hasField(11)) {
+                    response.setStanField11(responseMessage.getObjectValue(11).toString());
+                }
+                if (responseMessage.hasField(12)) {
+                    response.setLocalTransactionTimeField12(responseMessage.getObjectValue(12).toString());
+                }
+                if (responseMessage.hasField(13)) {
+                    response.setLocalTransactionDateField13(responseMessage.getObjectValue(13).toString());
+                }
+                if (responseMessage.hasField(14)) {
+                    response.setCardExpirationDateField14(responseMessage.getObjectValue(14).toString());
+                }
+                if (responseMessage.hasField(15)) {
+                    response.setSettlementDateField15(responseMessage.getObjectValue(15).toString());
+                }
+                if (responseMessage.hasField(18)) {
+                    response.setMerchantTypeField18(responseMessage.getObjectValue(18).toString());
+                }
+                if (responseMessage.hasField(22)) {
+                    response.setPosEntryModeField22(responseMessage.getObjectValue(22).toString());
+                }
+                if (responseMessage.hasField(23)) {
+                    response.setCardSequenceNumberField23(responseMessage.getObjectValue(23).toString());
+                }
+                if (responseMessage.hasField(25)) {
+                    response.setPosConditionCodeField25(responseMessage.getObjectValue(25).toString());
+                }
+                if (responseMessage.hasField(28)) {
+                    response.setTransactionFeeAmountField28(responseMessage.getObjectValue(28).toString());
+                }
+                if (responseMessage.hasField(30)) {
+                    response.setTransactionProcessingFeeAmountField30(responseMessage.getObjectValue(30).toString());
+                }
+                if (responseMessage.hasField(32)) {
+                    response.setAcquiringInstitutionIdCodeField32(responseMessage.getObjectValue(32).toString());
+                }
+                if (responseMessage.hasField(33)) {
+                    response.setForwardingInstitutionIdCodeField33(responseMessage.getObjectValue(33).toString());
+                }
+                if (responseMessage.hasField(35)) {
+                    response.setTrack2DataField35(responseMessage.getObjectValue(35).toString());
+                }
+                if (responseMessage.hasField(37)) {
+                    response.setRetrievalReferenceNumberField37(responseMessage.getObjectValue(37).toString());
+                }
+                if (responseMessage.hasField(38)) {
+                    response.setAuthorizationIdResponseField38(responseMessage.getObjectValue(38).toString());
+                }
+                if (responseMessage.hasField(39)) {
+                    response.setResponseCodeField39(responseMessage.getObjectValue(39).toString());
+                }
+                if (responseMessage.hasField(40)) {
+                    response.setServiceRestrictionCodeField40(responseMessage.getObjectValue(40).toString());
+                }
+                if (responseMessage.hasField(41)) {
+                    response.setTerminalIdField41(responseMessage.getObjectValue(41).toString());
+                }
+                if (responseMessage.hasField(42)) {
+                    response.setCardAcceptorIdCodeField42(responseMessage.getObjectValue(42).toString());
+                }
+                if (responseMessage.hasField(43)) {
+                    response.setCardAcceptorNameOrLocationField43(responseMessage.getObjectValue(43).toString());
+                }
+                if (responseMessage.hasField(49)) {
+                    response.setTransactionCurrencyCodeField49(responseMessage.getObjectValue(49).toString());
+                }
+                if (responseMessage.hasField(54)) {
+                    response.setAdditionalAmountsField54(responseMessage.getObjectValue(54).toString());
+                }
+                if (responseMessage.hasField(55)) {
+                    response.setiCCDataField55(responseMessage.getObjectValue(55).toString());
+                }
+                if (responseMessage.hasField(56)) {
+                    response.setMessageReasonCodeField56(responseMessage.getObjectValue(56).toString());
+                }
+                if (responseMessage.hasField(59)) {
+                    response.setTransportDataField59(responseMessage.getObjectValue(59).toString());
+                }
+                if (responseMessage.hasField(90)) {
+                    response.setOriginalDataElementsField90(responseMessage.getObjectValue(90).toString());
+                }
+                if (responseMessage.hasField(95)) {
+                    response.setReplacementAmountsField95(responseMessage.getObjectValue(95).toString());
+                }
+                if (responseMessage.hasField(102)) {
+                    response.setAccountIdentification1Field102(responseMessage.getObjectValue(102).toString());
+                }
+                if (responseMessage.hasField(103)) {
+                    response.setAccountIdentification2Field103(responseMessage.getObjectValue(103).toString());
+                }
+                if (responseMessage.hasField(123)) {
+                    response.setPOSDataCodeField123(responseMessage.getObjectValue(123).toString());
+                }
+                if (responseMessage.hasField(124)) {
+                    response.setNFCDataField124(responseMessage.getObjectValue(124).toString());
+                }
+                if (responseMessage.hasField(128)) {
+                    response.setSecondaryMessageHashValueField128(responseMessage.getObjectValue(128).toString());
+                }
+            }
+            System.out.println("Response: {}"+ response.getResponseCodeField39());
+            System.out.println("Response: {}"+ nibssresponse.ResponseCodeMap(response.getResponseCodeField39()));
+        }
+
+}
+
 
 
 
@@ -451,8 +620,8 @@ public class IsoProcessor
             }
             if (request.hashMessage()) {
                 final String hashHex = generateHash256Value(temp, sessionKey);
-                final IsoValue<String> field128update = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)hashHex, 64);
-                isoMessage.setField(128, (IsoValue)field128update);
+                final IsoValue<String> field128update = (IsoValue<String>)new IsoValue(IsoType.ALPHA, hashHex, 64);
+                isoMessage.setField(128, field128update);
                 System.out.println("Message was hashed");
             }
             else {
@@ -460,14 +629,14 @@ public class IsoProcessor
             }
             //printIsoFields(isoMessage, String.format("%04x request", request.getMessageType()));
 
-            System.out.println("Message to send {}"+ (Object)new String(Message));
+            System.out.println("Message to send {}"+ new String(Message));
             socketRequester = new ChannelSocketRequestManager("196.6.103.18", 5009);
             //todo This is where the message coming from the pos will be sent
             //final byte[] responseBytes = socketRequester.sendAndRecieveData(toSend);
 //            final byte[] responseBytes = socketRequester.toNibss(Message);
             final byte[] responseBytes = null;
             if (responseBytes != null && responseBytes.length > 0) {
-                System.out.println("Response receive {}"+ (Object)new String(responseBytes));
+                System.out.println("Response receive {}"+ new String(responseBytes));
             }
             final MessageFactory<IsoMessage> responseMessageFactory = (MessageFactory<IsoMessage>)new MessageFactory();
             responseMessageFactory.addMessageTemplate(isoMessage);
@@ -599,7 +768,7 @@ public class IsoProcessor
                     response.setSecondaryMessageHashValueField128(responseMessage.getObjectValue(128).toString());
                 }
             }
-            System.out.println("Response: {}"+ (Object)response.getResponseCodeField39());
+            System.out.println("Response: {}"+ response.getResponseCodeField39());
         }
         catch (EOFException ex2) {
             response.setResponseCodeField39(TransactionErrorCode.FAILED_TO_READ_RESPONSE);
@@ -632,76 +801,76 @@ public class IsoProcessor
             else {
                 isoMessage.setType(1056);
             }
-            final IsoValue<String> field2 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)reversalRequest.getPanField2());
-            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)reversalRequest.getProcessingCodeField3(), 6);
-            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.AMOUNT, (Object)reversalRequest.getTransactionAmountField4(), 12);
-            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.DATE10, (Object)reversalRequest.getTransmissionDateTimeField7(), 10);
-            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)reversalRequest.getStanField11(), 6);
-            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.TIME, (Object)reversalRequest.getLocalTransactionTimeField12(), 6);
-            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)reversalRequest.getLocalTransactionDateField13(), 4);
-            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.DATE4, (Object)reversalRequest.getCardExpirationDateField14());
-            final IsoValue<String> field10 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getMerchantTypeField18(), 4);
-            final IsoValue<String> field11 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getPosEntryModeField22(), 3);
-            final IsoValue<String> field12 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)reversalRequest.getCardSequenceNumberField23(), 3);
-            final IsoValue<String> field13 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getPosConditionCodeField25(), 2);
-            final IsoValue<String> field14 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)reversalRequest.getPosPinCaptureCodeField26(), 2);
-            final IsoValue<String> field15 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getTransactionFeeAmountField28(), 9);
-            final IsoValue<String> field16 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)reversalRequest.getAcquiringInstitutionIdCodeField32());
-            final IsoValue<String> field17 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, (Object)reversalRequest.getTrack2DataField35());
-            final IsoValue<String> field18 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getRetrievalReferenceNumberField37(), 12);
-            final IsoValue<String> field19 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)reversalRequest.getServiceRestrictionCodeField40(), 3);
-            final IsoValue<String> field20 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getTerminalIdField41(), 8);
-            final IsoValue<String> field21 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getCardAcceptorIdCodeField42(), 15);
-            final IsoValue<String> field22 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getCardAcceptorNameOrLocationField43(), 40);
-            final IsoValue<String> field23 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, (Object)reversalRequest.getTransactionCurrencyCodeField49(), 3);
-            final IsoValue<String> field24 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getPinDataField52(), 16);
-            final IsoValue<String> field25 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getAdditionalAmountsField54());
-            final IsoValue<String> field26 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getMessageReasonCodeField56());
-            final IsoValue<String> field27 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getTransportDataField59());
+            final IsoValue<String> field2 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, reversalRequest.getPanField2());
+            final IsoValue<String> field3 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, reversalRequest.getProcessingCodeField3(), 6);
+            final IsoValue<String> field4 = (IsoValue<String>)new IsoValue(IsoType.AMOUNT, reversalRequest.getTransactionAmountField4(), 12);
+            final IsoValue<String> field5 = (IsoValue<String>)new IsoValue(IsoType.DATE10, reversalRequest.getTransmissionDateTimeField7(), 10);
+            final IsoValue<String> field6 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, reversalRequest.getStanField11(), 6);
+            final IsoValue<String> field7 = (IsoValue<String>)new IsoValue(IsoType.TIME, reversalRequest.getLocalTransactionTimeField12(), 6);
+            final IsoValue<String> field8 = (IsoValue<String>)new IsoValue(IsoType.DATE4, reversalRequest.getLocalTransactionDateField13(), 4);
+            final IsoValue<String> field9 = (IsoValue<String>)new IsoValue(IsoType.DATE4, reversalRequest.getCardExpirationDateField14());
+            final IsoValue<String> field10 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getMerchantTypeField18(), 4);
+            final IsoValue<String> field11 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getPosEntryModeField22(), 3);
+            final IsoValue<String> field12 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, reversalRequest.getCardSequenceNumberField23(), 3);
+            final IsoValue<String> field13 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getPosConditionCodeField25(), 2);
+            final IsoValue<String> field14 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, reversalRequest.getPosPinCaptureCodeField26(), 2);
+            final IsoValue<String> field15 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getTransactionFeeAmountField28(), 9);
+            final IsoValue<String> field16 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, reversalRequest.getAcquiringInstitutionIdCodeField32());
+            final IsoValue<String> field17 = (IsoValue<String>)new IsoValue(IsoType.LLVAR, reversalRequest.getTrack2DataField35());
+            final IsoValue<String> field18 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getRetrievalReferenceNumberField37(), 12);
+            final IsoValue<String> field19 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, reversalRequest.getServiceRestrictionCodeField40(), 3);
+            final IsoValue<String> field20 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getTerminalIdField41(), 8);
+            final IsoValue<String> field21 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getCardAcceptorIdCodeField42(), 15);
+            final IsoValue<String> field22 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getCardAcceptorNameOrLocationField43(), 40);
+            final IsoValue<String> field23 = (IsoValue<String>)new IsoValue(IsoType.NUMERIC, reversalRequest.getTransactionCurrencyCodeField49(), 3);
+            final IsoValue<String> field24 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getPinDataField52(), 16);
+            final IsoValue<String> field25 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, reversalRequest.getAdditionalAmountsField54());
+            final IsoValue<String> field26 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, reversalRequest.getMessageReasonCodeField56());
+            final IsoValue<String> field27 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, reversalRequest.getTransportDataField59());
 //            final IsoValue<String> field28 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getPaymentInformationField60());
-            final IsoValue<String> field29 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getOriginalDataElementsField90(), 42);
-            final IsoValue<String> field30 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)reversalRequest.getReplacementAmountsField95(), 42);
-            final IsoValue<String> field31 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, (Object)reversalRequest.getPOSDataCodeField123());
-            final IsoValue<String> field32 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)new String(new byte[] { 0 }), 64);
-            isoMessage.setField(2, (IsoValue)field2);
-            isoMessage.setField(3, (IsoValue)field3);
-            isoMessage.setField(4, (IsoValue)field4);
-            isoMessage.setField(7, (IsoValue)field5);
-            isoMessage.setField(11, (IsoValue)field6);
-            isoMessage.setField(12, (IsoValue)field7);
-            isoMessage.setField(13, (IsoValue)field8);
-            isoMessage.setField(14, (IsoValue)field9);
-            isoMessage.setField(18, (IsoValue)field10);
-            isoMessage.setField(22, (IsoValue)field11);
-            isoMessage.setField(23, (IsoValue)field12);
-            isoMessage.setField(25, (IsoValue)field13);
-            isoMessage.setField(26, (IsoValue)field14);
-            isoMessage.setField(28, (IsoValue)field15);
-            isoMessage.setField(32, (IsoValue)field16);
-            isoMessage.setField(35, (IsoValue)field17);
-            isoMessage.setField(37, (IsoValue)field18);
-            isoMessage.setField(40, (IsoValue)field19);
-            isoMessage.setField(41, (IsoValue)field20);
-            isoMessage.setField(42, (IsoValue)field21);
-            isoMessage.setField(43, (IsoValue)field22);
-            isoMessage.setField(49, (IsoValue)field23);
+            final IsoValue<String> field29 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getOriginalDataElementsField90(), 42);
+            final IsoValue<String> field30 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, reversalRequest.getReplacementAmountsField95(), 42);
+            final IsoValue<String> field31 = (IsoValue<String>)new IsoValue(IsoType.LLLVAR, reversalRequest.getPOSDataCodeField123());
+            final IsoValue<String> field32 = (IsoValue<String>)new IsoValue(IsoType.ALPHA, new String(new byte[] { 0 }), 64);
+            isoMessage.setField(2, field2);
+            isoMessage.setField(3, field3);
+            isoMessage.setField(4, field4);
+            isoMessage.setField(7, field5);
+            isoMessage.setField(11, field6);
+            isoMessage.setField(12, field7);
+            isoMessage.setField(13, field8);
+            isoMessage.setField(14, field9);
+            isoMessage.setField(18, field10);
+            isoMessage.setField(22, field11);
+            isoMessage.setField(23, field12);
+            isoMessage.setField(25, field13);
+            isoMessage.setField(26, field14);
+            isoMessage.setField(28, field15);
+            isoMessage.setField(32, field16);
+            isoMessage.setField(35, field17);
+            isoMessage.setField(37, field18);
+            isoMessage.setField(40, field19);
+            isoMessage.setField(41, field20);
+            isoMessage.setField(42, field21);
+            isoMessage.setField(43, field22);
+            isoMessage.setField(49, field23);
             if (reversalRequest.getPinDataField52() != null) {
-                isoMessage.setField(52, (IsoValue)field24);
+                isoMessage.setField(52, field24);
             }
             if (reversalRequest.getAdditionalAmountsField54() != null) {
-                isoMessage.setField(54, (IsoValue)field25);
+                isoMessage.setField(54, field25);
             }
             if (reversalRequest.getMessageReasonCodeField56() != null) {
-                isoMessage.setField(56, (IsoValue)field26);
+                isoMessage.setField(56, field26);
             }
             if (reversalRequest.getTransportDataField59() != null) {
-                isoMessage.setField(59, (IsoValue)field27);
+                isoMessage.setField(59, field27);
             }
 //            isoMessage.setField(60, (IsoValue)field28);
-            isoMessage.setField(90, (IsoValue)field29);
-            isoMessage.setField(95, (IsoValue)field30);
-            isoMessage.setField(123, (IsoValue)field31);
-            isoMessage.setField(128, (IsoValue)field32);
+            isoMessage.setField(90, field29);
+            isoMessage.setField(95, field30);
+            isoMessage.setField(123, field31);
+            isoMessage.setField(128, field32);
             final byte[] bites = isoMessage.writeData();
             final int length = bites.length;
             final byte[] temp = new byte[length - 64];
@@ -709,11 +878,11 @@ public class IsoProcessor
                 System.arraycopy(bites, 0, temp, 0, length - 64);
             }
             final String hashHex = generateHash256Value(temp, sessionKey);
-            final IsoValue<String> field128update = (IsoValue<String>)new IsoValue(IsoType.ALPHA, (Object)hashHex, 64);
-            isoMessage.setField(128, (IsoValue)field128update);
+            final IsoValue<String> field128update = (IsoValue<String>)new IsoValue(IsoType.ALPHA, hashHex, 64);
+            isoMessage.setField(128, field128update);
             printIsoFields(isoMessage, "reversal request");
             final byte[] toSend = isoMessage.writeData();
-            System.out.println("Message to send {}"+ (Object)new String(toSend));
+            System.out.println("Message to send {}"+ new String(toSend));
             socketRequester = new ChannelSocketRequestManager(IsoProcessor.NIBSS_IP, IsoProcessor.NIBSS_PORT);
             final byte[] responseBytes = socketRequester.sendAndRecieveData(toSend);
             final MessageFactory<IsoMessage> responseMessageFactory = (MessageFactory<IsoMessage>)new MessageFactory();
@@ -833,7 +1002,7 @@ public class IsoProcessor
             }
         }
         catch (Exception e) {
-            System.out.println("Could not complete reversal"+ (Throwable)e);
+            System.out.println("Could not complete reversal"+ e);
             if (socketRequester != null) {
                 try {
                     socketRequester.disconnect();
@@ -865,7 +1034,7 @@ public class IsoProcessor
             return sha256Context.digest();
         }
         catch (NoSuchAlgorithmException e) {
-            System.out.println("Failed to calculate hash"+ (Throwable)e);
+            System.out.println("Failed to calculate hash"+ e);
             return null;
         }
     }
@@ -885,12 +1054,12 @@ public class IsoProcessor
         if (hashText.length() < 64) {
             final int numberOfZeroes = 64 - hashText.length();
             String zeroes = "";
-            String temp = hashText.toString();
+            String temp = hashText;
             for (int i = 0; i < numberOfZeroes; ++i) {
                 zeroes += "0";
             }
             temp = zeroes + temp;
-            System.out.println("Utility :: generateHash256Value :: HashValue with zeroes: {}"+ (Object)temp);
+            System.out.println("Utility :: generateHash256Value :: HashValue with zeroes: {}"+ temp);
             return temp;
         }
         return hashText;

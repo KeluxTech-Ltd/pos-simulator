@@ -18,6 +18,10 @@ import com.jayrush.springmvcrest.fep.ISWprocessor;
 import com.jayrush.springmvcrest.fep.RequestProcessingException;
 import com.jayrush.springmvcrest.iso8583.IsoMessage;
 import com.jayrush.springmvcrest.iso8583.MessageFactory;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 import org.jpos.iso.ISODate;
 import org.jpos.iso.ISOException;
 import org.jpos.iso.ISOMsg;
@@ -32,6 +36,7 @@ import javax.net.ssl.X509TrustManager;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.security.*;
@@ -40,6 +45,7 @@ import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Scanner;
 
 import static com.jayrush.springmvcrest.Nibss.processor.IsoProcessor.printIsoFields;
 
@@ -48,28 +54,17 @@ public class ChannelSocketRequestManager
 {
     private static Logger logger = LoggerFactory.getLogger(ChannelSocketRequestManager.class);
 
-    private SSLSocket socket;
+    private Socket socket;
 
     public ChannelSocketRequestManager() {
 
     }
 
-    public ChannelSocketRequestManager(final String ipAddress, final int port) throws IOException, KeyManagementException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException {
-        final TrustManager[] trustAllCerts = { new X509TrustManager() {
-            public X509Certificate[] getAcceptedIssuers() {
-                final X509Certificate[] myTrustedAnchors = new X509Certificate[0];
-                return myTrustedAnchors;
-            }
 
-            public void checkClientTrusted(final X509Certificate[] certs, final String authType) {
-            }
-
-            public void checkServerTrusted(final X509Certificate[] certs, final String authType) {
-            }
-        } };
-        final SSLContext sc = SSLContext.getInstance("SSL");
-        sc.init(null, trustAllCerts, new SecureRandom());
-        this.socket = (SSLSocket)sc.getSocketFactory().createSocket(ipAddress, port);
+    public ChannelSocketRequestManager(String endpoint, int port) throws IOException, KeyManagementException, KeyStoreException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException {
+        new Scanner(System.in);
+        InetAddress ip = InetAddress.getByName(endpoint);
+        this.socket = new Socket(ip, port);
     }
 
     public void disconnect() throws IOException {
@@ -78,22 +73,45 @@ public class ChannelSocketRequestManager
         }
     }
 
+    public static void main(String[] args) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+
+        MediaType mediaType = MediaType.parse("application/json");
+        RequestBody body = RequestBody.create(mediaType, "{\r\n\"remarks\": \"Test Transaction\",\r\n\"accountNumber\": \"0000019866\",\r\n\"amount\": 800000000\r\n}");
+        Request request = new Request.Builder()
+                .url("https://theprojectsplash.com/AgentTerminal/api/Services/validateTransaction")
+                .post(body)
+                .addHeader("content-type", "application/json")
+                .addHeader("authorization", "Basic M0xpbmU5UFNCOlRKR1NqeXNiazd1ampzYnlzODNvanNqYnNzag==")
+                .build();
+
+
+
+        okhttp3.Response response = client.newCall(request).execute();
+        if(response.isSuccessful()){
+            System.out.println("Successful");
+
+        }else {
+            System.out.println("Failed");
+        }
+        System.out.println("Result: " + response.body().string());
+    }
+
     public byte[] sendAndRecieveData(final byte[] data) throws IOException {
         if (this.socket.isConnected()) {
-            final DataOutputStream os = new DataOutputStream(this.socket.getOutputStream());
-            final DataInputStream is = new DataInputStream(this.socket.getInputStream());
-            final short length = (short)data.length;
-            final byte[] headerBytes = DataUtil.shortToBytes(length);
-            final byte[] messagePayload = concat(headerBytes, data);
-            os.write(messagePayload);
-            os.flush();
-            final byte[] lenBytes = new byte[2];
-            is.readFully(lenBytes);
-            final int contentLength = DataUtil.bytesToShort(lenBytes);
-            final byte[] resp = new byte[contentLength];
-            is.readFully(resp);
-            String s = new String(resp);
-            System.out.println(s);
+            DataInputStream dis = new DataInputStream(this.socket.getInputStream());
+            DataOutputStream dos = new DataOutputStream(this.socket.getOutputStream());
+            short length = (short)data.length;
+            byte[] headerBytes = DataUtil.shortToBytes(length);
+            byte[] messagePayload = concat(headerBytes, data);
+            dos.write(messagePayload);
+            dos.flush();
+            byte[] lenBytes = new byte[2];
+            dis.readFully(lenBytes);
+            int contentLength = DataUtil.bytesToShort(lenBytes);
+            byte[] resp = new byte[contentLength];
+            dis.readFully(resp);
+            new String(resp);
             return resp;
         }
         throw new IOException("Socket not connected");
@@ -113,7 +131,7 @@ public class ChannelSocketRequestManager
 
     public Response toNIBSS(final byte[] Message) throws IOException, ParseException {
         if (this.socket.isConnected()) {
-            this.socket.setSoTimeout(60000);
+            this.socket.setSoTimeout(90000);
             Response responseObj = new Response();
             final DataOutputStream Out = new DataOutputStream(this.socket.getOutputStream());
             final DataInputStream In = new DataInputStream(this.socket.getInputStream());
@@ -175,7 +193,7 @@ public class ChannelSocketRequestManager
 
         Socket socketconn = new Socket();
         socketconn.connect(new InetSocketAddress(host.getHostIp(), host.getHostPort()));
-        socketconn.setSoTimeout(60000);
+        socketconn.setSoTimeout(90000);
         if (socketconn.isConnected()) {
             logger.info("Connection connected");
 

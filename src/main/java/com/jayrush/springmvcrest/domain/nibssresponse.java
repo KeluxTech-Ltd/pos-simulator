@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class nibssresponse {
-    public String ResponseCodeMap(String responseCode) {
+    public static String ResponseCodeMap(String responseCode) {
         Map<String, String> ResponseCodes = new HashMap<>();
         ResponseCodes.put("00", "Approved");
         ResponseCodes.put("01",	"Refer to card Issuer");
